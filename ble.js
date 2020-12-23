@@ -54,7 +54,6 @@ noble.on('discover', async (peripheral) => {
 this.devices = () => {
     myLog('devices = ' + BLE_devices.length, color.cyan);
     BLE_devices.forEach(element => {
-        console.log(element);
         require('./mqtt_client').publish_ble_sensor(element);
     });
 }

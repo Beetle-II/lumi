@@ -52,10 +52,8 @@ this.publish_ble_sensor = (sensor) => {
         let sensor_name = sensor.type + '_' + sensor.id;
 
         const state_topic = common.config.mqtt_topic + '/ble/' + sensor.id + '/' + sensor.type;
-        mqtt_client.publish(state_topic + '/state', sensor.value.toString(), {retain: false}, function () {
-        });
-        mqtt_client.publish(state_topic + '/lastSeen', sensor.lastSeen.toISOString().replace(/T/, ' ').replace(/\..+/, ''), {retain: false}, function () {
-        });
+        mqtt_client.publish(state_topic + '/state', sensor.value.toString(), {retain: false});
+        mqtt_client.publish(state_topic + '/lastSeen', sensor.lastSeen.toString(), {retain: false});
 
         if (common.config.homeassistant) {
             const config_topic = 'homeassistant/' + 'sensor' + '/' + sensor.id + '/' + 'ble_' + sensor.type + '/config';
@@ -72,10 +70,9 @@ this.publish_ble_sensor = (sensor) => {
                 },
                 'device_class': sensor.type
             };
-            mqtt_client.publish(config_topic, JSON.stringify(anons), {retain: true}, function () {
-            });
+            mqtt_client.publish(config_topic, JSON.stringify(anons), {retain: true});
         }
-        common.myLog('publish sensor: ' + id + ', ' + sensor.type + ', ' + sensor.value);
+        common.myLog('publish sensor: ' + sensor.id + ', ' + sensor.value);
     } catch (e) {
         common.myLog(e, common.colors.red);
     }
@@ -83,14 +80,12 @@ this.publish_ble_sensor = (sensor) => {
 
 this.publish_lamp = lamp => {
     common.myLog('publish lamp=' + lamp, common.colors.yellow);
-    mqtt_client.publish(common.config.mqtt_topic + '/light', lamp, {retain: false}, function () {
-    });
+    mqtt_client.publish(common.config.mqtt_topic + '/light', lamp, {retain: false});
 }
 
 this.publish_illuminance = illuminance => {
     common.myLog('publish illuminance=' + illuminance, common.colors.yellow);
-    mqtt_client.publish(common.config.mqtt_topic + '/illuminance', illuminance.toString(), {retain: false}, function () {
-    });
+    mqtt_client.publish(common.config.mqtt_topic + '/illuminance', illuminance.toString(), {retain: false});
 }
 
 this.publish_button = button => {
