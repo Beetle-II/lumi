@@ -1,0 +1,16 @@
+{
+	"homeassistant": true,
+		"sensor_debounce_period": 300,
+
+	"mqtt_url": "mqtt://адрес mqtt сервера",
+	"mqtt_topic": "lumi",
+	"mqtt_options": {
+		"port": 1883,
+		"username":"логин для mqtt сервера",
+		"password": "пароль для mqtt сервера",
+		"keepalive": 60,
+		"reconnectPeriod": 1000,
+		"clean": true,
+		"encoding": "utf8"
+	}
+}
