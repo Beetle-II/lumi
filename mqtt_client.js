@@ -10,10 +10,13 @@ mqtt_client.on('connect', () => {
     common.myLog('mqtt_client.connect', common.colors.green);
 
     // Отправляем состояния устройств
-    gateway.lamp();
-    gateway.illuminance();
+    gateway.getStatus();
+    gateway.getLamp();
+    gateway.getIlluminance();
+    gateway.getPlay();
+    gateway.getVolume();
 
-    mqtt_client.subscribe([common.config.mqtt_topic + '/+/set'], function () {
+    mqtt_client.subscribe([common.config.mqtt_topic + '/+/set', common.config.mqtt_topic + '/+/+/set'], function () {
         common.myLog('mqtt_client.subscribe', common.colors.green);
     });
 });
@@ -21,19 +24,26 @@ mqtt_client.on('connect', () => {
 mqtt_client.on('message', (topic, message) => {
     common.myLog('topic= ' + topic + ', message = ' + message);
     try {
-        msg = JSON.parse(message);
-        let obj = topic.split("/")[1];
-        common.myLog('obj= ' + obj);
-        common.myLog(msg);
-        switch (obj) {
-            // lumi/light/set
+        switch (topic.split("/")[1]) {
             case 'light':
-                gateway.lampSet(msg);
+                // lumi/light/set
+                gateway.setLamp(JSON.parse(message));
                 break;
             case 'music':
-                //zesp32/playSound/00158D000317C9FB/kill/set
-                //exec("killall mpg123");
-
+                // lumi/music/volume/set
+                // lumi/music/play/set
+                switch (topic.split("/")[2]) {
+                    case 'play':
+                        gateway.setPlay(message.toString());
+                        break;
+                    case 'volume':
+                        gateway.setVolume(message.toString());
+                        break;
+                }
+                break;
+            case 'say':
+                // lumi/say/set
+                gateway.setSay(message.toString());
                 break;
         }
     } catch (err) {
@@ -78,7 +88,7 @@ this.publish_ble_sensor = (sensor) => {
     }
 }
 
-this.publish_lamp = lamp => {
+this.publish_lamp = (lamp) => {
     common.myLog('publish lamp=' + lamp, common.colors.yellow);
     mqtt_client.publish(common.config.mqtt_topic + '/light', lamp, {retain: false});
 }
@@ -90,6 +100,20 @@ this.publish_illuminance = illuminance => {
 
 this.publish_button = button => {
     common.myLog('publish button=' + button, common.colors.yellow);
-    mqtt_client.publish(common.config.mqtt_topic + '/button', button.toString(), {retain: false}, function () {
-    });
+    mqtt_client.publish(common.config.mqtt_topic + '/button', button.toString(), {retain: false});
 }
+
+this.publish_status = () => {
+    common.myLog('publish status', common.colors.yellow);
+    mqtt_client.publish(common.config.mqtt_topic + '/status', 'online', {retain: false});
+};
+
+this.publish_play = name => {
+    common.myLog('publish play ' + name, common.colors.yellow);
+    mqtt_client.publish(common.config.mqtt_topic + '/music/play', name, {retain: false});
+};
+
+this.publish_volume = volume => {
+    common.myLog('publish volume ' + volume, common.colors.yellow);
+    mqtt_client.publish(common.config.mqtt_topic + '/music/volume', volume, {retain: false});
+};

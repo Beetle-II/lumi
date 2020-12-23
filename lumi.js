@@ -10,7 +10,7 @@ const gateway = require('./gateway');
 setInterval(() => {
     myLog('timer', color.purple);
     // Отправляем состояния устройств
-    gateway.illuminance();
+    gateway.getIlluminance();
 }, 60 * 1000);
 
 // Запускаем таймер для публикации состояний датчиков
@@ -18,8 +18,11 @@ let timer_ID = setTimeout( function tick() {
     myLog('timer', color.cyan);
 
     // Отправляем состояния устройств
-    gateway.lamp();
-    ble.devices();
+    gateway.getStatus();
+    gateway.getLamp();
+    gateway.getPlay();
+    gateway.getVolume();
+    ble.getDevices();
 
     timer_ID = setTimeout(tick, sensor_debounce_period * 1000);
 }, sensor_debounce_period * 1000);

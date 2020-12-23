@@ -24,7 +24,7 @@ noble.on('discover', async (peripheral) => {
         let result = new miParser(peripheral.advertisement.serviceData[0].data, 'e85feb9d97474fcf329b0d611afb4e4a').parse();
 
         Object.keys(result.event).forEach(function(key){
-            let id = peripheral.id + '_' + key;
+            let id = peripheral.id;
 
             if (!BLE_devices[id]) {
                 BLE_devices[id] = { id }
@@ -51,7 +51,7 @@ noble.on('discover', async (peripheral) => {
 });
 
 // Отправляем информацию обустройствах
-this.devices = () => {
+this.getDevices = () => {
     myLog('devices = ' + BLE_devices.length, color.cyan);
     BLE_devices.forEach(element => {
         require('./mqtt_client').publish_ble_sensor(element);
