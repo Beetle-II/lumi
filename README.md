@@ -7,8 +7,11 @@ MQTT агент для шлюза Xiaomi DGNWG05LM с прошивкой [OpenWR
 
 Добавляем репозиторий со свежими версиями и обновляем их:
 ```
-echo 'src/gz openlumi https://openlumi.github.io/openwrt-packages/packages' >> /etc/opkg/customfeeds.conf
-opkg update && opkg install git-http node
+wget https://openlumi.github.io/openwrt-packages/public.key -O /tmp/public.key
+opkg-key add /tmp/public.key
+echo 'src/gz openlumi https://openlumi.github.io/openwrt-packages/packages/19.07/arm_cortex-a9_neon' >> /etc/opkg/customfeeds.conf
+
+opkg update && opkg install git-http node mpc
 ```
 Скачиваем:
 ```
