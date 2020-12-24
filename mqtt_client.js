@@ -10,7 +10,7 @@ mqtt_client.on('connect', () => {
     common.myLog('mqtt_client.connect', common.colors.green);
 
     // Отправляем состояния устройств
-    gateway.getStatus();
+    gateway.getState();
     gateway.getLamp();
     gateway.getIlluminance();
     gateway.getPlay();
@@ -57,63 +57,46 @@ mqtt_client.on('error', err => {
 
 //////////////////
 
-this.publish_ble_sensor = (sensor) => {
+this.publish = device => {
     try {
-        let sensor_name = sensor.type + '_' + sensor.id;
-
-        const state_topic = common.config.mqtt_topic + '/ble/' + sensor.id + '/' + sensor.type;
-        mqtt_client.publish(state_topic + '/state', sensor.value.toString(), {retain: false});
-        mqtt_client.publish(state_topic + '/lastSeen', sensor.lastSeen.toString(), {retain: false});
-
-        if (common.config.homeassistant) {
-            const config_topic = 'homeassistant/' + 'sensor' + '/' + sensor.id + '/' + 'ble_' + sensor.type + '/config';
-            let anons = {
-                'name': sensor_name,
-                'state_topic': state_topic,
-                'unique_id': sensor_name,
-                'device': {
-                    'identifiers': [sensor_name],
-                    'name': sensor_name,
-                    'sw_version': '1.0',
-                    'model': 'lumi',
-                    'manufacturer': 'lumi'
-                },
-                'device_class': sensor.type
-            };
-            mqtt_client.publish(config_topic, JSON.stringify(anons), {retain: true});
-        }
-        common.myLog('publish sensor: ' + sensor.id + ', ' + sensor.value);
+        mqtt_client.publish(device.state_topic, JSON.stringify(device.value), {retain: false});
     } catch (e) {
         common.myLog(e, common.colors.red);
     }
 }
 
-this.publish_lamp = (lamp) => {
-    common.myLog('publish lamp=' + lamp, common.colors.yellow);
-    mqtt_client.publish(common.config.mqtt_topic + '/light', lamp, {retain: false});
+this.publish_homeassistant = device => {
+    try {
+        mqtt_client.publish(device.config_topic, JSON.stringify(device.homeassistant), {retain: true});
+
+        // const sensor_name = device.type + '_' + device.id;
+        // switch (device.domain) {
+        //     case 'button': {
+        //         let anons = {}
+        //     }
+        //     default: {
+        //         let anons = {
+        //             'name': sensor_name,
+        //             'unique_id': sensor_name,
+        //             'device': {
+        //                 'identifiers': [sensor_name],
+        //                 'name': sensor_name,
+        //                 'sw_version': '1.0',
+        //                 'model': 'Xiaomi Gateway ' + device.type,
+        //                 'manufacturer': 'Xiaomi'
+        //             },
+        //             'device_class': device.type,
+        //             'unit_of_measurement': device.unit_of_measurement,
+        //             'availability_topic': common.config.mqtt_topic + '/status',
+        //             'state_topic': device.state_topic
+        //         }
+        //         break;
+        //     }
+        // }
+        // const config_topic = 'homeassistant/' + device.domain + '/' + device.id + '/' + device.type + '/config';
+        // mqtt_client.publish(config_topic, JSON.stringify(anons), {retain: true});
+
+    } catch (e) {
+        common.myLog(e, common.colors.red);
+    }
 }
-
-this.publish_illuminance = illuminance => {
-    common.myLog('publish illuminance=' + illuminance, common.colors.yellow);
-    mqtt_client.publish(common.config.mqtt_topic + '/illuminance', illuminance.toString(), {retain: false});
-}
-
-this.publish_button = button => {
-    common.myLog('publish button=' + button, common.colors.yellow);
-    mqtt_client.publish(common.config.mqtt_topic + '/button', button.toString(), {retain: false});
-}
-
-this.publish_status = () => {
-    common.myLog('publish status', common.colors.yellow);
-    mqtt_client.publish(common.config.mqtt_topic + '/status', 'online', {retain: false});
-};
-
-this.publish_play = name => {
-    common.myLog('publish play ' + name, common.colors.yellow);
-    mqtt_client.publish(common.config.mqtt_topic + '/music/play', name, {retain: false});
-};
-
-this.publish_volume = volume => {
-    common.myLog('publish volume ' + volume, common.colors.yellow);
-    mqtt_client.publish(common.config.mqtt_topic + '/music/volume', volume, {retain: false});
-};

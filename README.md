@@ -9,17 +9,20 @@ MQTT агент для шлюза Xiaomi DGNWG05LM с прошивкой [OpenWR
 Кнопка | lumi/button
 Воспроизводимый url | lumi/music/play | lumi/music/play/set
 Громкость | lumi/music/volume | lumi/music/volume/set
-Голосовое уведомление |  | 
+Голосовое уведомление |  |
+BLE устройства | lumi/{MAC} |
 
-Для скачивания и запуска необходимы дополнительно git и node.js
+{MAC} - адрес bluetooth устройства.
 
-Добавляем репозиторий со свежими версиями и обновляем их:
+Для скачивания и работы необходимы пакеты node.js, git, mpc
+
+Добавляем репозиторий со свежими версиями Node и устанавливаем необходимые пакеты:
 ```
 wget https://openlumi.github.io/openwrt-packages/public.key -O /tmp/public.key
 opkg-key add /tmp/public.key
 echo 'src/gz openlumi https://openlumi.github.io/openwrt-packages/packages/19.07/arm_cortex-a9_neon' >> /etc/opkg/customfeeds.conf
 
-opkg update && opkg install git-http node mpc
+opkg update && opkg install node git-http mpc
 ```
 Скачиваем:
 ```

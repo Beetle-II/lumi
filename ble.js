@@ -6,7 +6,11 @@ const noble = require('@abandonware/noble');
 
 const RSSI_THRESHOLD = -92;
 const BLE_devices = [];
-
+const unit_of_measurement = {
+    'temperature': '°C',
+    'humidity': '%',
+    'battery': '%'
+}
 noble.on('stateChange', state => {
     if (state === 'poweredOn') {
         myLog('noble.startScanning', color.green);
@@ -23,42 +27,69 @@ noble.on('discover', async (peripheral) => {
     try {
         let result = new miParser(peripheral.advertisement.serviceData[0].data, 'e85feb9d97474fcf329b0d611afb4e4a').parse();
 
-        Object.keys(result.event).forEach(function(key){
-            let id = peripheral.id;
-
-            if (!BLE_devices[id]) {
-                BLE_devices[id] = { id }
-                BLE_devices.push(
-                    {
-                        "id": id,
-                        "type": key,
-                        "value": result.event[key],
-                        "lastSeen": Date.now()
-                    }
-                );
-                //myLog('store: ' + id + ', ' + key + ' : ' + result.event[key]);
+        Object.keys(result.event).forEach(function (key) {
+            if (!BLE_devices[peripheral.id]) {
+                BLE_devices[peripheral.id] = {}
+            }
+            if (!BLE_devices[peripheral.id][key]) {
+                BLE_devices[peripheral.id][key] = {
+                    type: key,
+                    unit_of_measurement: unit_of_measurement[key],
+                    name: peripheral.advertisement.localName,
+                    value: result.event[key],
+                    lastSeen: Date.now()
+                };
+                //myLog('store: ' + peripheral.id + ', ' + key + ' : ' + result.event[key]);
             } else {
-                BLE_devices[id].value = result.event[key];
-                BLE_devices[id].lastSeen = Date.now();
-                //myLog('update: ' + id + ', ' + key + ' : ' + result.event[key]);
+                BLE_devices[peripheral.id][key].value = result.event[key];
+                BLE_devices[peripheral.id][key].lastSeen = Date.now();
+                //myLog('update: ' + peripheral.id + ', ' + key + ' : ' + result.event[key]);
             }
         });
-
         //require('./mqtt_client').publish_ble_sensor('battery', , peripheral);
     } catch (e) {
         //console.log(e);
     }
 });
 
-// Отправляем информацию обустройствах
+// Отправляем информацию об устройствах
 this.getDevices = () => {
-    myLog('devices = ' + BLE_devices.length, color.cyan);
-    BLE_devices.forEach(element => {
-        require('./mqtt_client').publish_ble_sensor(element);
+    let devices = {}
+    Object.keys(BLE_devices).forEach(device_id => {
+        devices.state_topic = require('./common').config.mqtt_topic + '/' + device_id;
+        devices.value = {};
+        let device = BLE_devices[device_id];
+        Object.keys(device).forEach(key => {
+            let device_type = device[key].type;
+            devices.value[device_type] = device[key].value;
+            if (require('./common').config.homeassistant) {
+                let device_name = device_id + '_' + device_type;
+                let dev = {
+                    config_topic: 'homeassistant/sensor/' + device_id + '/' + device_type+ '/config',
+                    homeassistant: {
+                        name: device_name,
+                        unique_id: device_name,
+                        device_class: device_type,
+                        state_topic: devices.state_topic,
+                        unit_of_measurement: device[key].unit_of_measurement,
+                        value_template: '{{ value_json.' + device_type + ' }}',
+                        device: {
+                            name: device[key].name,
+                            identifiers: [ device[key].name ],
+                            sw_version: '1.0',
+                            model: 'Xiaomi Gateway',
+                            manufacturer: 'Xiaomi'
+                        }
+                    }
+                };
+                require('./mqtt_client').publish_homeassistant(dev);
+            }
+        });
+        require('./mqtt_client').publish(devices);
     });
 }
 
-///////////////////////////////////////////
+/////////////
 
 const FrameControlFlags = {
     isFactoryNew: 1 << 0,
