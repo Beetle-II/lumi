@@ -1,13 +1,16 @@
 const fs = require('fs');
-const http = require('http');
+const cp = require('child_process');
+const https = require('https');
 const googleTTS = require('google-tts-api');
-const common = require('./common');
 
-//const mac = require('os').networkInterfaces().wlan0[0].mac.replace(/:/g,'').toUpperCase();
+const common = require('./common');
+const mqtt = require('./mqtt_client');
+
+//const mac = os.networkInterfaces().wlan0[0].mac.replace(/:/g,'').toUpperCase();
 
 //////////////////
 let device = {
-    identifiers: [ 'xiaomi_gateway' ],
+    identifiers: ['xiaomi_gateway'],
     name: 'Xiaomi_Gateway',
     sw_version: '1.0',
     model: 'Xiaomi Gateway',
@@ -87,13 +90,16 @@ let button = {
     }
 }
 
-let music = {
-    url: {
-        state_topic: common.config.mqtt_topic + '/music/url',
-        value: ''
+let audio = {
+    play: {
+        state_topic: common.config.mqtt_topic + '/audio/play',
+        value: {
+            url: '',
+            name: ''
+        }
     },
     volume: {
-        state_topic: common.config.mqtt_topic + '/music/volume',
+        state_topic: common.config.mqtt_topic + '/audio/volume',
         value: 0
     }
 }
@@ -102,16 +108,16 @@ let music = {
 
 // Отправляем данные о статусе шлюза
 this.getState = () => {
-    require('./mqtt_client').publish(state);
+    mqtt.publish(state);
     this.getIlluminance();
     this.getLamp();
     this.getPlay();
     this.getVolume();
 
     if (common.config.homeassistant) {
-        require('./mqtt_client').publish_homeassistant(lamp);
-        require('./mqtt_client').publish_homeassistant(illuminance);
-        require('./mqtt_client').publish_homeassistant(button);
+        mqtt.publish_homeassistant(lamp);
+        mqtt.publish_homeassistant(illuminance);
+        mqtt.publish_homeassistant(button);
     }
 }
 
@@ -127,29 +133,30 @@ this.getLamp = () => {
         lamp.value.state = 'OFF';
     }
     lamp.brightness = Math.round(0.2126 * lamp.value.color.r + 0.7152 * lamp.value.color.g + 0.0722 * lamp.value.color.b);
-    require('./mqtt_client').publish(lamp);
+    mqtt.publish(lamp);
 }
 
 // Меняем состояние лампы в зависимости от полученных данных
-this.setLamp = obj => {
+this.setLamp = message => {
     try {
-        if (obj.state === 'OFF') {
+        let msg = JSON.parse(message);
+        if (msg.state === 'OFF') {
             fs.writeFileSync(lamp.path.r, 0);
             fs.writeFileSync(lamp.path.g, 0);
             fs.writeFileSync(lamp.path.b, 0);
         } else {
-            if (obj.color.r !== lamp.value.color.r) {
-                fs.writeFileSync(lamp.path.r, obj.color.r);
+            if (msg.color.r !== lamp.value.color.r) {
+                fs.writeFileSync(lamp.path.r, msg.color.r);
             }
-            if (obj.color.g !== lamp.value.color.g) {
-                fs.writeFileSync(lamp.path.g, obj.color.g);
+            if (msg.color.g !== lamp.value.color.g) {
+                fs.writeFileSync(lamp.path.g, msg.color.g);
             }
-            if (obj.color.b !== lamp.value.color.b) {
-                fs.writeFileSync(lamp.path.b, obj.color.b);
+            if (msg.color.b !== lamp.value.color.b) {
+                fs.writeFileSync(lamp.path.b, msg.color.b);
             }
         }
-    } catch (e) {
-        myLog(e, color.red);
+    } catch {
+        this.sayText('Произошла ошибка!', 'ru');
     }
     this.getLamp();
 }
@@ -176,54 +183,106 @@ fs.watch(lamp.path.b, (eventType) => {
 // Отправляем данные датчика освещенности
 this.getIlluminance = () => {
     illuminance.value = parseInt(fs.readFileSync('/sys/bus/iio/devices/iio:device0/in_voltage5_raw').toString());
-    require('./mqtt_client').publish(illuminance);
+    mqtt.publish(illuminance);
 }
 
 // Получаем состояние проигрывателя
 this.getPlay = () => {
-    music.url.value = require('child_process').execSync("mpc current --format '%name% - %artist% - %title%'").toString().replace(/ -  -/g, ' -');
-    require('./mqtt_client').publish(music.url);
+    audio.play.value.name = cp.execSync("mpc current --format '%name% - %artist% - %title%'").toString().replace(/ -  -/g, ' -');
+    mqtt.publish(audio.play.value);
 }
 
 // Включаем/выключаем проигрыватель
-this.setPlay = (url) => {
-    if (url == '') {
-        require('child_process').execSync('mpc stop');
-    } else {
-        require('child_process').execSync('mpc clear && mpc add ' + url + ' && mpc play');
+this.setPlay = (message) => {
+    try {
+        let msg = JSON.parse(message);
+        if (msg.volume) {
+            this.setVolume(msg.volume);
+        }
+        if (msg.url) {
+            audio.play.value.url = msg.url;
+        } else {
+            audio.play.value.url = msg;
+        }
+        if (audio.play.value.url.length < 5) {
+            audio.play.value.url = '';
+            cp.execSync('mpc stop');
+        } else {
+            cp.execSync('mpc clear && mpc add ' + audio.play.value.url + ' && mpc play');
+        }
+        
+        setTimeout(() => {
+            this.getPlay();
+        }, 1 * 1000);
+    } catch (e) {
+        common.myLog(e, common.colors.red);
+        this.sayText('Произошла ошибка!', 'ru');
     }
-    setTimeout(() => {
-        this.getPlay();
-    }, 1 * 1000);
 }
 
 // Получаем состояние о громкости
 this.getVolume = () => {
-    music.volume.value = require('child_process').execSync("amixer get Master | awk '$0~/%/{print $4}' | tr -d '[]%'").toString().split(require('os').EOL)[0];
-    require('./mqtt_client').publish(music.volume);
+    audio.volume.value = cp.execSync("amixer get Master | awk '$0~/%/{print $4}' | tr -d '[]%'").toString().split(require('os').EOL)[0];
+    mqtt.publish(audio.volume);
+
+    return audio.volume.value;
 }
 
 // Устанавливаем громкость
 this.setVolume = volume => {
-    require('child_process').execSync("amixer sset Master " + volume + "%");
+    cp.execSync('amixer sset Master ' + volume + '%');
     this.getVolume();
 }
 
 // Произнести указанный текст
-this.setSay = (text) => {
-    // googleTTS(text, 'ru', 1) // speed normal = 1 (default), slow = 0.24
-    //     .then((url) => {
-    //         let file = fs.createWriteStream('/tmp/google-tts.mp3');
-    //         http.get(url, function(response) {
-    //             response.pipe(file);
-    //         });
-    //         this.setPlay('/tmp/google-tts.mp3'); // https://translate.google.com/translate_tts?...
-    //     })
-    //     .catch((err) => {
-    //         console.error(err.stack);
-    //     });
+this.setSay = message => {
+    try {
+        let msg = JSON.parse(message);
+
+        let lang = 'ru';
+        if (msg.lang) {
+            lang = msg.lang;
+        }
+        let text = 'Ошибка';
+        if (msg.text) {
+            text = msg.text;
+        }
+
+        cp.execSync('mpc pause');
+
+        let vol = this.getVolume();
+        if (msg.volume) {
+            this.setVolume(msg.volume);
+        }
+
+        this.sayText(text, lang);
+
+        if (msg.volume) {
+            this.setVolume(vol);
+        }
+
+        cp.execSync('mpc play');
+    } catch (e) {
+        common.myLog(e, common.colors.red);
+        this.sayText('Произошла ошибка!', 'ru');
+    }
 }
 
+this.sayText = (text, lang) => {
+    if (text.length > 3) {
+        googleTTS(text, lang, 1) // speed normal = 1 (default), slow = 0.24
+            .then((url) => {
+                let file = fs.createWriteStream('/tmp/google-tts.mp3');
+                https.get(url, function (response) {
+                    response.pipe(file);
+                });
+            })
+            .catch((err) => {
+                common.myLog(error(err), common.colors.red);
+            });
+        cp.execSync('mpg123 /tmp/google-tts.mp3');
+    }
+};
 //////////////////
 
 // Получаем данные о кнопке
@@ -241,7 +300,7 @@ fd.on('data', function (buf) {
         };
         if (event.type == 1 && event.code == 256) {
             button.value = event.value;
-            require('./mqtt_client').publish(button);
+            mqtt.publish(button);
         }
     }
 });

@@ -1,10 +1,9 @@
-myLog = require('./common').myLog;
-color = require('./common').colors;
-
 const crypto = require('crypto');
 const noble = require('@abandonware/noble');
 
-const RSSI_THRESHOLD = -92;
+const common = require('./common');
+const mqtt = require('./mqtt_client');
+
 const BLE_devices = [];
 const unit_of_measurement = {
     'temperature': '°C',
@@ -13,7 +12,7 @@ const unit_of_measurement = {
 }
 noble.on('stateChange', state => {
     if (state === 'poweredOn') {
-        myLog('noble.startScanning', color.green);
+        common.myLog('noble.startScanning', common.colors.green);
         noble.startScanning([], true);
     } else {
         noble.stopScanning();
@@ -21,51 +20,48 @@ noble.on('stateChange', state => {
 });
 
 noble.on('discover', async (peripheral) => {
-    if (peripheral.rssi < RSSI_THRESHOLD) {
-        return;
-    }
     try {
         let result = new miParser(peripheral.advertisement.serviceData[0].data, 'e85feb9d97474fcf329b0d611afb4e4a').parse();
-
-        Object.keys(result.event).forEach(function (key) {
-            if (!BLE_devices[peripheral.id]) {
-                BLE_devices[peripheral.id] = {}
-            }
-            if (!BLE_devices[peripheral.id][key]) {
-                BLE_devices[peripheral.id][key] = {
-                    type: key,
-                    unit_of_measurement: unit_of_measurement[key],
-                    name: peripheral.advertisement.localName,
-                    value: result.event[key],
-                    lastSeen: Date.now()
-                };
-                //myLog('store: ' + peripheral.id + ', ' + key + ' : ' + result.event[key]);
-            } else {
-                BLE_devices[peripheral.id][key].value = result.event[key];
-                BLE_devices[peripheral.id][key].lastSeen = Date.now();
-                //myLog('update: ' + peripheral.id + ', ' + key + ' : ' + result.event[key]);
-            }
-        });
-        //require('./mqtt_client').publish_ble_sensor('battery', , peripheral);
     } catch (e) {
         //console.log(e);
     }
+
+    Object.keys(result.event).forEach(function (key) {
+        if (!BLE_devices[peripheral.id]) {
+            BLE_devices[peripheral.id] = {}
+        }
+        if (!BLE_devices[peripheral.id][key]) {
+            BLE_devices[peripheral.id][key] = {
+                type: key,
+                unit_of_measurement: unit_of_measurement[key],
+                name: peripheral.advertisement.localName,
+                value: result.event[key],
+                lastSeen: Date.now()
+            };
+            //common.myLog('store: ' + peripheral.id + ', ' + key + ' : ' + result.event[key]);
+        } else {
+            BLE_devices[peripheral.id][key].value = result.event[key];
+            BLE_devices[peripheral.id][key].lastSeen = Date.now();
+            //common.myLog('update: ' + peripheral.id + ', ' + key + ' : ' + result.event[key]);
+        }
+    });
+    //mqtt.publish_ble_sensor('battery', , peripheral);
 });
 
 // Отправляем информацию об устройствах
 this.getDevices = () => {
     let devices = {}
     Object.keys(BLE_devices).forEach(device_id => {
-        devices.state_topic = require('./common').config.mqtt_topic + '/' + device_id;
+        devices.state_topic = common.config.mqtt_topic + '/' + device_id;
         devices.value = {};
         let device = BLE_devices[device_id];
         Object.keys(device).forEach(key => {
             let device_type = device[key].type;
             devices.value[device_type] = device[key].value;
-            if (require('./common').config.homeassistant) {
+            if (common.config.homeassistant) {
                 let device_name = device_id + '_' + device_type;
                 let dev = {
-                    config_topic: 'homeassistant/sensor/' + device_id + '/' + device_type+ '/config',
+                    config_topic: 'homeassistant/sensor/' + device_id + '/' + device_type + '/config',
                     homeassistant: {
                         name: device_name,
                         unique_id: device_name,
@@ -75,17 +71,17 @@ this.getDevices = () => {
                         value_template: '{{ value_json.' + device_type + ' }}',
                         device: {
                             name: device[key].name,
-                            identifiers: [ device[key].name ],
+                            identifiers: [device[key].name],
                             sw_version: '1.0',
                             model: 'Xiaomi Gateway',
                             manufacturer: 'Xiaomi'
                         }
                     }
                 };
-                require('./mqtt_client').publish_homeassistant(dev);
+                mqtt.publish_homeassistant(dev);
             }
         });
-        require('./mqtt_client').publish(devices);
+        mqtt.publish(devices);
     });
 }
 

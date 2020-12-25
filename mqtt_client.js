@@ -22,28 +22,29 @@ mqtt_client.on('connect', () => {
 });
 
 mqtt_client.on('message', (topic, message) => {
-    common.myLog('topic= ' + topic + ', message = ' + message);
+    common.myLog('Получен topic= ' + topic, common.colors.yellow);
+    common.myLog('message = ' + message);
     try {
         switch (topic.split("/")[1]) {
             case 'light':
                 // lumi/light/set
-                gateway.setLamp(JSON.parse(message));
+                gateway.setLamp(message);
                 break;
-            case 'music':
-                // lumi/music/volume/set
-                // lumi/music/play/set
+            case 'audio':
+                // lumi/audio/volume/set
+                // lumi/audio/play/set
                 switch (topic.split("/")[2]) {
                     case 'play':
-                        gateway.setPlay(message.toString());
+                        gateway.setPlay(message);
                         break;
                     case 'volume':
-                        gateway.setVolume(message.toString());
+                        gateway.setVolume(message);
                         break;
                 }
                 break;
             case 'say':
                 // lumi/say/set
-                gateway.setSay(message.toString());
+                gateway.setSay(message);
                 break;
         }
     } catch (err) {
