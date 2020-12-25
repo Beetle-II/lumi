@@ -8,7 +8,7 @@ const common = require('./common');
 //////////////////
 let device = {
     identifiers: [ 'xiaomi_gateway' ],
-    name: 'xiaomi_gateway',
+    name: 'Xiaomi_Gateway',
     sw_version: '1.0',
     model: 'Xiaomi Gateway',
     manufacturer: 'Xiaomi'
