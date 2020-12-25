@@ -1,6 +1,7 @@
 const fs = require('fs');
 const cp = require('child_process');
 const https = require('https');
+const urlParse = require('url').parse;
 const googleTTS = require('google-tts-api');
 
 const common = require('./common');
@@ -94,6 +95,7 @@ let audio = {
     play: {
         state_topic: common.config.mqtt_topic + '/audio/play',
         value: {
+
             url: '',
             name: ''
         }
@@ -188,8 +190,8 @@ this.getIlluminance = () => {
 
 // Получаем состояние проигрывателя
 this.getPlay = () => {
-    audio.play.value.name = cp.execSync("mpc current --format '%name% - %artist% - %title%'").toString().replace(/ -  -/g, ' -');
-    mqtt.publish(audio.play.value);
+    audio.play.value.name = cp.execSync("mpc current --format '%name% - %artist% - %title%'").toString().replace(/ -  -/g, ' -').replace('\n','');
+    mqtt.publish(audio.play);
 }
 
 // Включаем/выключаем проигрыватель
@@ -199,15 +201,18 @@ this.setPlay = (message) => {
         if (msg.volume) {
             this.setVolume(msg.volume);
         }
+        let url = '';
         if (msg.url) {
-            audio.play.value.url = msg.url;
+            url = msg.url.toString();
         } else {
-            audio.play.value.url = msg;
+            url = msg.toString();
         }
-        if (audio.play.value.url.length < 5) {
-            audio.play.value.url = '';
+
+        if (url.length < 5) {
+            audio.play.value.url = 'stop';
             cp.execSync('mpc stop');
         } else {
+            audio.play.value.url = url;
             cp.execSync('mpc clear && mpc add ' + audio.play.value.url + ' && mpc play');
         }
         
@@ -270,19 +275,60 @@ this.setSay = message => {
 
 this.sayText = (text, lang) => {
     if (text.length > 3) {
-        googleTTS(text, lang, 1) // speed normal = 1 (default), slow = 0.24
+        googleTTS(text , lang)
             .then((url) => {
-                let file = fs.createWriteStream('/tmp/google-tts.mp3');
-                https.get(url, function (response) {
-                    response.pipe(file);
-                });
+                const dest = '/tmp/google-tts.mp3';
+                return downloadFile(url, dest);
+            })
+            .then(() => {
+                //console.log('Download success');
+                cp.execSync('mpg123 /tmp/google-tts.mp3');
+                fs.unlinkSync('/tmp/google-tts.mp3');
             })
             .catch((err) => {
-                common.myLog(error(err), common.colors.red);
+                console.error(err.stack);
             });
-        cp.execSync('mpg123 /tmp/google-tts.mp3');
     }
 };
+
+function downloadFile(url, dest) {
+    return new Promise(function (resolve, reject) {
+        const info = urlParse(url);
+        const httpClient = info.protocol === 'https:' ? https : http;
+        const options = {
+            host: info.host,
+            path: info.path,
+            headers: {
+                'user-agent': 'WHAT_EVER',
+            },
+        };
+
+        httpClient
+            .get(options, (res) => {
+                // check status code
+                if (res.statusCode !== 200) {
+                    const msg = `request to ${url} failed, status code = ${res.statusCode} (${res.statusMessage})`;
+                    reject(new Error(msg));
+                    return;
+                }
+
+                const file = fs.createWriteStream(dest);
+                file.on('finish', function () {
+                    // close() is async, call resolve after close completes.
+                    file.close(resolve);
+                });
+                file.on('error', function (err) {
+                    // Delete the file async. (But we don't check the result)
+                    fs.unlink(dest);
+                    reject(err);
+                });
+
+                res.pipe(file);
+            })
+            .on('error', reject)
+            .end();
+    });
+}
 //////////////////
 
 // Получаем данные о кнопке
