@@ -95,7 +95,6 @@ let audio = {
     play: {
         state_topic: common.config.mqtt_topic + '/audio/play',
         value: {
-
             url: '',
             name: ''
         }
