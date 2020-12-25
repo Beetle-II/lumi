@@ -82,9 +82,9 @@ cp lumi /etc/init.d/lumi
 lumi/light/set | {"color":{"r":50,"g":50,"b":50},"state":"ON"} | Включить подсветку
 lumi/light/set | {"state":"OFF"} | Выключить подсветку
  | |
-lumi/audio/play/set | {"url": "http://ep128.hostingradio.ru:8030/ep128"} | Включить Радио Европа+
+lumi/audio/play/set | "http://ep128.hostingradio.ru:8030/ep128" | Включить Радио Европа+
 lumi/audio/play/set | {"url": "https://air.radiorecord.ru:805/rr_320", "volume": 50} | Включить Радио рекорд с громкостью 50
-lumi/audio/play/set | {"url": ""} | Выключить воспроизведение
+lumi/audio/play/set | "stop" | Выключить воспроизведение
 | |
 lumi/audio/volume/set | 30 | Именить громкость на 30
 | |
