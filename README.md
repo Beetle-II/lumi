@@ -79,8 +79,8 @@ cp lumi /etc/init.d/lumi
 
 Топик | Значение | Описание
 --- | --- | ---
-lumi/light/set | {"color":{"r":50,"g":50,"b":50},"state":"ON"} | Включить подсветку
-lumi/light/set | {"state":"OFF"} | Выключить подсветку
+lumi/light/set | {"color":{"r":50,"g":50,"b":50},"state":"on"} | Включить подсветку
+lumi/light/set | "off" | Выключить подсветку
  | |
 lumi/audio/play/set | "http://ep128.hostingradio.ru:8030/ep128" | Включить Радио Европа+
 lumi/audio/play/set | {"url": "https://air.radiorecord.ru:805/rr_320", "volume": 50} | Включить Радио рекорд с громкостью 50
@@ -88,6 +88,6 @@ lumi/audio/play/set | "stop" | Выключить воспроизведение
 | |
 lumi/audio/volume/set | 30 | Именить громкость на 30
 | |
-lumi/say/set | {"text": "Привет"} | Произнести 'Привет'
 lumi/say/set | {"text": "Привет", "volume": 80} | Произнести 'Привет' с громкостью 80
+lumi/say/set | "Привет" | Произнести 'Привет'
 | |

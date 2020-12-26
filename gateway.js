@@ -1,5 +1,6 @@
 const fs = require('fs');
 const cp = require('child_process');
+const crypto = require('crypto');
 const https = require('https');
 const urlParse = require('url').parse;
 const googleTTS = require('google-tts-api');
@@ -32,7 +33,7 @@ let lamp = {
             g: 0,
             b: 0
         },
-        state: 'OFF',
+        state: 'off',
         brightness: 0
     },
 
@@ -95,7 +96,7 @@ let audio = {
     play: {
         state_topic: common.config.mqtt_topic + '/audio/play',
         value: {
-            url: '',
+            url: 'stop',
             name: ''
         }
     },
@@ -129,9 +130,9 @@ this.getLamp = () => {
     lamp.value.color.b = parseInt(fs.readFileSync(lamp.path.b).toString());
 
     if (lamp.value.color.r + lamp.value.color.g + lamp.value.color.b > 0) {
-        lamp.value.state = 'ON';
+        lamp.value.state = 'on';
     } else {
-        lamp.value.state = 'OFF';
+        lamp.value.state = 'off';
     }
     lamp.brightness = Math.round(0.2126 * lamp.value.color.r + 0.7152 * lamp.value.color.g + 0.0722 * lamp.value.color.b);
     mqtt.publish(lamp);
@@ -141,7 +142,14 @@ this.getLamp = () => {
 this.setLamp = message => {
     try {
         let msg = JSON.parse(message);
-        if (msg.state === 'OFF') {
+        let state;
+        if (msg.state) {
+            state = msg.state;
+        } else {
+            state = msg.toString();
+        }
+
+        if (state.toLowerCase() === 'off') {
             fs.writeFileSync(lamp.path.r, 0);
             fs.writeFileSync(lamp.path.g, 0);
             fs.writeFileSync(lamp.path.b, 0);
@@ -189,7 +197,7 @@ this.getIlluminance = () => {
 
 // Получаем состояние проигрывателя
 this.getPlay = () => {
-    audio.play.value.name = cp.execSync("mpc current --format '%name% - %artist% - %title%'").toString().replace(/ -  -/g, ' -').replace('\n','');
+    audio.play.value.name = cp.execSync("mpc current --format '%name% - %artist% - %title%'").toString().replace(/ -  -/g, ' -').replace('\n', '');
     mqtt.publish(audio.play);
 }
 
@@ -197,12 +205,16 @@ this.getPlay = () => {
 this.setPlay = (message) => {
     try {
         let msg = JSON.parse(message);
+
         if (msg.volume) {
             this.setVolume(msg.volume);
+        } else {
+            this.setVolume(msg);
         }
-        let url = '';
+
+        let url;
         if (msg.url) {
-            url = msg.url.toString();
+            url = msg.url;
         } else {
             url = msg.toString();
         }
@@ -214,7 +226,7 @@ this.setPlay = (message) => {
             audio.play.value.url = url;
             cp.execSync('mpc clear && mpc add ' + audio.play.value.url + ' && mpc play');
         }
-        
+
         setTimeout(() => {
             this.getPlay();
         }, 1 * 1000);
@@ -247,12 +259,17 @@ this.setSay = message => {
         if (msg.lang) {
             lang = msg.lang;
         }
+
         let text = 'Ошибка';
         if (msg.text) {
             text = msg.text;
+        } else {
+            text = msg.toString();
         }
 
-        cp.execSync('mpc pause');
+        if (audio.play.value.url.toLowerCase() !== 'stop') {
+            cp.execSync('mpc pause');
+        }
 
         let vol = this.getVolume();
         if (msg.volume) {
@@ -264,8 +281,9 @@ this.setSay = message => {
         if (msg.volume) {
             this.setVolume(vol);
         }
-
-        cp.execSync('mpc play');
+        if (audio.play.value.url !== 'stop') {
+            cp.execSync('mpc play');
+        }
     } catch (e) {
         common.myLog(e, common.colors.red);
         this.sayText('Произошла ошибка!', 'ru');
@@ -274,24 +292,32 @@ this.setSay = message => {
 
 this.sayText = (text, lang) => {
     if (text.length > 3) {
-        googleTTS(text , lang)
-            .then((url) => {
-                const dest = '/tmp/google-tts.mp3';
-                return downloadFile(url, dest);
-            })
-            .then(() => {
-                //console.log('Download success');
-                cp.execSync('mpg123 /tmp/google-tts.mp3');
-                fs.unlinkSync('/tmp/google-tts.mp3');
-            })
-            .catch((err) => {
-                console.error(err.stack);
-            });
+
+        let md5sum = crypto.createHash('md5');
+        md5sum.update(text);
+        const file = '/tmp/' + md5sum.digest('hex');
+
+        if (fs.existsSync(file)) {
+            cp.execSync('mpg123 ' + file);
+        } else {
+            googleTTS(text, lang)
+                .then((url) => {
+                    return downloadFile(url, file);
+                })
+                .then(() => {
+                    //console.log('Download success');
+                    cp.execSync('mpg123 ' + file);
+                    //fs.unlinkSync(file);
+                })
+                .catch((err) => {
+                    console.error(err.stack);
+                });
+        }
     }
 };
 
 function downloadFile(url, dest) {
-    return new Promise(function (resolve, reject) {
+    return new Promise((resolve, reject) => {
         const info = urlParse(url);
         const httpClient = info.protocol === 'https:' ? https : http;
         const options = {
@@ -328,6 +354,7 @@ function downloadFile(url, dest) {
             .end();
     });
 }
+
 //////////////////
 
 // Получаем данные о кнопке
