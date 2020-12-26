@@ -47,6 +47,7 @@ cd lumi
   "sensor_treshhold": 50,
   "mqtt_url": "mqtt://адрес вашего сервера",
   "mqtt_topic": "lumi",
+  "use_mac_in_mqtt_topic": false,
   "mqtt_options": {
     "port": 1883,
     "username": "логин сюда",
