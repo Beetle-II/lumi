@@ -44,6 +44,7 @@ cd lumi
 {
   "homeassistant": true,
   "sensor_debounce_period": 300,
+  "sensor_treshhold": 50,
   "mqtt_url": "mqtt://адрес вашего сервера",
   "mqtt_topic": "lumi",
   "mqtt_options": {
