@@ -1,3 +1,5 @@
+this.config = require('./config.json');
+
 this.colors = {
     "black": "\x1b[30m",
     "red": "\x1b[31m",
@@ -10,8 +12,8 @@ this.colors = {
     "reset": "\x1b[0m"
 }
 
-this.config = require('./config.json');
-
 this.myLog = function (message, color = "\x1b[37m") {
     console.log(color, message, '\x1b[0m');
 }
+
+this.mac = ''

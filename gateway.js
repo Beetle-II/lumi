@@ -8,12 +8,10 @@ const googleTTS = require('google-tts-api');
 const common = require('./common');
 const mqtt = require('./mqtt_client');
 
-const mac = require('os').networkInterfaces().wlan0[0].mac.replace(/:/g,'').toUpperCase();
-
 //////////////////
 let device = {
-    identifiers: ['xiaomi_gateway_' + mac],
-    name: 'Xiaomi_Gateway_' + mac,
+    identifiers: ['xiaomi_gateway' + common.mac],
+    name: 'Xiaomi_Gateway' + common.mac,
     sw_version: '1.0',
     model: 'Xiaomi Gateway',
     manufacturer: 'Xiaomi'
@@ -43,7 +41,7 @@ let lamp = {
         b: '/sys/class/backlight/lumi_b/brightness'
     },
 
-    config_topic: 'homeassistant/light/lumi_light/config',
+    config_topic: 'homeassistant/light/lumi' + common.mac + '_light/config',
     homeassistant: {
         name: 'Lumi Light',
         uniq_id: 'lumi_light',
@@ -59,7 +57,7 @@ let illuminance = {
     state_topic: common.config.mqtt_topic + '/illuminance',
     value: 0,
 
-    config_topic: 'homeassistant/sensor/lumi_illuminance/config',
+    config_topic: 'homeassistant/sensor/lumi' + common.mac + '_illuminance/config',
     homeassistant: {
         name: 'Lumi Illuminance',
         uniq_id: 'lumi_illuminance',
@@ -82,7 +80,7 @@ let button = {
         autoClose: true
     },
 
-    config_topic: 'homeassistant/device_automation/lumi_button/config',
+    config_topic: 'homeassistant/device_automation/lumi' + common.mac + '_button/config',
     homeassistant: {
         automation_type: 'trigger',
         topic: common.config.mqtt_topic + '/button',

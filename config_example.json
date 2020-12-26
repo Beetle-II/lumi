@@ -5,6 +5,7 @@
 
 	"mqtt_url": "mqtt://адрес mqtt сервера",
 	"mqtt_topic": "lumi",
+	"use_mac_in_mqtt_topic": false,
 	"mqtt_options": {
 		"port": 1883,
 		"username":"логин для mqtt сервера",

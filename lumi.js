@@ -1,4 +1,10 @@
 const common = require('./common');
+if (common.config.use_mac_in_mqtt_topic) {
+    common.mac = '_' + require('os').networkInterfaces().wlan0[0].mac.replace(/:/g,'').toUpperCase();
+    common.config.mqtt_topic = common.config.mqtt_topic + common.mac;
+}
+common.config.mqtt_options.clientId = 'mqtt_js_' + Math.random().toString(16).substr(2, 8);
+
 const gateway = require('./gateway');
 const ble = require('./ble');
 const mqtt = require('./mqtt_client');
