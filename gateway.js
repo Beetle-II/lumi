@@ -31,8 +31,14 @@ let lamp = {
             g: 0,
             b: 0
         },
-        state: 'off',
+        state: 'OFF',
         brightness: 0
+    },
+
+    default_color: {
+        r: 30,
+        g: 30,
+        b: 30
     },
 
     path: {
@@ -94,7 +100,7 @@ let audio = {
     play: {
         state_topic: common.config.mqtt_topic + '/audio/play',
         value: {
-            url: 'stop',
+            url: 'STOP',
             name: ''
         }
     },
@@ -128,9 +134,9 @@ this.getLamp = () => {
     lamp.value.color.b = parseInt(fs.readFileSync(lamp.path.b).toString());
 
     if (lamp.value.color.r + lamp.value.color.g + lamp.value.color.b > 0) {
-        lamp.value.state = 'on';
+        lamp.value.state = 'ON';
     } else {
-        lamp.value.state = 'off';
+        lamp.value.state = 'OFF';
     }
     lamp.brightness = Math.round(0.2126 * lamp.value.color.r + 0.7152 * lamp.value.color.g + 0.0722 * lamp.value.color.b);
     mqtt.publish(lamp);
@@ -147,19 +153,26 @@ this.setLamp = message => {
             state = msg.toString();
         }
 
-        if (state.toLowerCase() === 'off') {
+        if (state.toUpperCase() === 'OFF') {
             fs.writeFileSync(lamp.path.r, 0);
             fs.writeFileSync(lamp.path.g, 0);
             fs.writeFileSync(lamp.path.b, 0);
-        } else {
-            if (msg.color.r !== lamp.value.color.r) {
-                fs.writeFileSync(lamp.path.r, msg.color.r);
-            }
-            if (msg.color.g !== lamp.value.color.g) {
-                fs.writeFileSync(lamp.path.g, msg.color.g);
-            }
-            if (msg.color.b !== lamp.value.color.b) {
-                fs.writeFileSync(lamp.path.b, msg.color.b);
+        }
+        if (state.toUpperCase() === 'ON') {
+            if (msg.color) {
+                if (msg.color.r !== lamp.value.color.r) {
+                    fs.writeFileSync(lamp.path.r, msg.color.r);
+                }
+                if (msg.color.g !== lamp.value.color.g) {
+                    fs.writeFileSync(lamp.path.g, msg.color.g);
+                }
+                if (msg.color.b !== lamp.value.color.b) {
+                    fs.writeFileSync(lamp.path.b, msg.color.b);
+                }
+            } else {
+                fs.writeFileSync(lamp.path.r, lamp.default_color.r);
+                fs.writeFileSync(lamp.path.g, lamp.default_color.g);
+                fs.writeFileSync(lamp.path.b, lamp.default_color.b);
             }
         }
     } catch {
@@ -188,11 +201,11 @@ fs.watch(lamp.path.b, (eventType) => {
 
 // Отправляем данные датчика освещенности
 this.getIlluminance = (treshhold = 0) => {
-    let ill = parseInt(fs.readFileSync('/sys/bus/iio/devices/iio:device0/in_voltage5_raw').toString());
-    if (Math.abs(illuminance.value - ill) > treshhold) {
+    let ill_prev = illuminance.value;
+    illuminance.value = parseInt(fs.readFileSync('/sys/bus/iio/devices/iio:device0/in_voltage5_raw'));
+    if (Math.abs(illuminance.value - ill_prev) > treshhold) {
         mqtt.publish(illuminance);
     }
-    illuminance.value = ill;
 }
 
 // Получаем состояние проигрывателя
@@ -267,7 +280,7 @@ this.setSay = message => {
             text = msg.toString();
         }
 
-        if (audio.play.value.url.toLowerCase() !== 'stop') {
+        if (audio.play.value.url.toUpperCase() !== 'STOP') {
             cp.execSync('mpc pause');
         }
 
@@ -281,7 +294,7 @@ this.setSay = message => {
         if (msg.volume) {
             this.setVolume(vol);
         }
-        if (audio.play.value.url !== 'stop') {
+        if (audio.play.value.url !== 'STOP') {
             cp.execSync('mpc play');
         }
     } catch (e) {
