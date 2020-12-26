@@ -5,14 +5,12 @@ const mqtt = require('./mqtt_client');
 
 gateway.setVolume(50);
 
-// Запускаем таймер на 60 секунд
+// Запускаем таймер 1
 setInterval(() => {
-    common.myLog('timer 1', common.colors.purple);
-    // Отправляем состояния устройств
     gateway.getIlluminance(common.config.sensor_treshhold);
 }, 1 * 1000);
 
-// Запускаем таймер для публикации состояний датчиков
+// Запускаем таймер 2 для публикации состояний датчиков
 let timer_ID = setTimeout( function tick() {
     common.myLog('timer 2', common.colors.cyan);
 
