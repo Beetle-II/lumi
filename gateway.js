@@ -8,12 +8,12 @@ const googleTTS = require('google-tts-api');
 const common = require('./common');
 const mqtt = require('./mqtt_client');
 
-//const mac = os.networkInterfaces().wlan0[0].mac.replace(/:/g,'').toUpperCase();
+const mac = require('os').networkInterfaces().wlan0[0].mac.replace(/:/g,'').toUpperCase();
 
 //////////////////
 let device = {
-    identifiers: ['xiaomi_gateway'],
-    name: 'Xiaomi_Gateway',
+    identifiers: ['xiaomi_gateway_' + mac],
+    name: 'Xiaomi_Gateway_' + mac,
     sw_version: '1.0',
     model: 'Xiaomi Gateway',
     manufacturer: 'Xiaomi'
@@ -188,11 +188,13 @@ fs.watch(lamp.path.b, (eventType) => {
 });
 */
 
-
 // Отправляем данные датчика освещенности
-this.getIlluminance = () => {
-    illuminance.value = parseInt(fs.readFileSync('/sys/bus/iio/devices/iio:device0/in_voltage5_raw').toString());
-    mqtt.publish(illuminance);
+this.getIlluminance = (treshhold = 0) => {
+    let ill = parseInt(fs.readFileSync('/sys/bus/iio/devices/iio:device0/in_voltage5_raw').toString());
+    if (Math.abs(illuminance.value - ill) > treshhold) {
+        mqtt.publish(illuminance);
+    }
+    illuminance.value = ill;
 }
 
 // Получаем состояние проигрывателя

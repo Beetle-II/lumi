@@ -9,8 +9,8 @@ gateway.setVolume(50);
 setInterval(() => {
     common.myLog('timer 1', common.colors.purple);
     // Отправляем состояния устройств
-    gateway.getIlluminance();
-}, 60 * 1000);
+    gateway.getIlluminance(common.config.sensor_treshhold);
+}, 1 * 1000);
 
 // Запускаем таймер для публикации состояний датчиков
 let timer_ID = setTimeout( function tick() {
