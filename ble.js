@@ -10,6 +10,7 @@ const unit_of_measurement = {
     'humidity': '%',
     'battery': '%'
 }
+
 noble.on('stateChange', state => {
     if (state === 'poweredOn') {
         common.myLog('noble.startScanning', common.colors.green);
@@ -22,30 +23,30 @@ noble.on('stateChange', state => {
 noble.on('discover', async (peripheral) => {
     try {
         let result = new miParser(peripheral.advertisement.serviceData[0].data, 'e85feb9d97474fcf329b0d611afb4e4a').parse();
+
+        Object.keys(result.event).forEach(function (key) {
+            if (!BLE_devices[peripheral.id]) {
+                BLE_devices[peripheral.id] = {}
+            }
+            if (!BLE_devices[peripheral.id][key]) {
+                BLE_devices[peripheral.id][key] = {
+                    type: key,
+                    unit_of_measurement: unit_of_measurement[key],
+                    name: peripheral.advertisement.localName,
+                    value: result.event[key],
+                    lastSeen: Date.now()
+                };
+                common.myLog('store: ' + peripheral.id + ', ' + key + ' : ' + result.event[key]);
+            } else {
+                BLE_devices[peripheral.id][key].value = result.event[key];
+                BLE_devices[peripheral.id][key].lastSeen = Date.now();
+                common.myLog('update: ' + peripheral.id + ', ' + key + ' : ' + result.event[key]);
+            }
+        });
     } catch (e) {
-        //console.log(e);
+        //common.myLog(e, common.colors.res);
     }
 
-    Object.keys(result.event).forEach(function (key) {
-        if (!BLE_devices[peripheral.id]) {
-            BLE_devices[peripheral.id] = {}
-        }
-        if (!BLE_devices[peripheral.id][key]) {
-            BLE_devices[peripheral.id][key] = {
-                type: key,
-                unit_of_measurement: unit_of_measurement[key],
-                name: peripheral.advertisement.localName,
-                value: result.event[key],
-                lastSeen: Date.now()
-            };
-            //common.myLog('store: ' + peripheral.id + ', ' + key + ' : ' + result.event[key]);
-        } else {
-            BLE_devices[peripheral.id][key].value = result.event[key];
-            BLE_devices[peripheral.id][key].lastSeen = Date.now();
-            //common.myLog('update: ' + peripheral.id + ', ' + key + ' : ' + result.event[key]);
-        }
-    });
-    //mqtt.publish_ble_sensor('battery', , peripheral);
 });
 
 // Отправляем информацию об устройствах

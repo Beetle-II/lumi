@@ -33,9 +33,10 @@ opkg update && opkg install node git-http mpc
 Скачиваем:
 
 ```
-сd /opt
+cd /opt
 git clone https://github.com/Beetle-II/lumi.git
 cd lumi
+cp config_example.json config.json
 ```
 
 Изменяем конфигурационный файл config.json Указываем адрес своего сервера, логин и пароль

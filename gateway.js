@@ -211,6 +211,9 @@ this.getIlluminance = (treshhold = 0) => {
 // Получаем состояние проигрывателя
 this.getPlay = () => {
     audio.play.value.name = cp.execSync("mpc current --format '%name% - %artist% - %title%'").toString().replace(/ -  -/g, ' -').replace('\n', '');
+    if (audio.play.value.name.length < 5) {
+        audio.play.value.name = '';
+    }
     mqtt.publish(audio.play);
 }
 
