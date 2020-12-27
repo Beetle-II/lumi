@@ -9,6 +9,7 @@ const common = require('./common');
 const mqtt = require('./mqtt_client');
 
 //////////////////
+
 let device = {
     identifiers: ['xiaomi_gateway' + common.mac],
     name: 'Xiaomi_Gateway' + common.mac,
@@ -27,18 +28,18 @@ let lamp = {
     state_topic: common.config.mqtt_topic + '/light',
     value: {
         color: {
-            r: 0,
-            g: 0,
-            b: 0
+            r: 30,
+            g: 30,
+            b: 30
         },
         state: 'OFF',
         brightness: 0
     },
 
-    default_color: {
-        r: 30,
-        g: 30,
-        b: 30
+    real_color: {
+        r: 0,
+        g: 0,
+        b: 0
     },
 
     path: {
@@ -129,54 +130,51 @@ this.getState = () => {
 
 // Получаем текущее состояние лампы
 this.getLamp = () => {
-    lamp.value.color.r = parseInt(fs.readFileSync(lamp.path.r).toString());
-    lamp.value.color.g = parseInt(fs.readFileSync(lamp.path.g).toString());
-    lamp.value.color.b = parseInt(fs.readFileSync(lamp.path.b).toString());
+    lamp.real_color.r = parseInt(fs.readFileSync(lamp.path.r).toString());
+    lamp.real_color.g = parseInt(fs.readFileSync(lamp.path.g).toString());
+    lamp.real_color.b = parseInt(fs.readFileSync(lamp.path.b).toString());
 
-    if (lamp.value.color.r + lamp.value.color.g + lamp.value.color.b > 0) {
+    lamp.brightness = Math.round(0.2126 * lamp.real_color.r + 0.7152 * lamp.real_color.g + 0.0722 * lamp.real_color.b);
+
+    if (lamp.real_color.r + lamp.real_color.g + lamp.real_color.b > 0) {
         lamp.value.state = 'ON';
+        mqtt.publish(lamp);
     } else {
         lamp.value.state = 'OFF';
+        // Публикуем только состояние, чтобы не потерять последний заданный цвет
+        mqtt.publish(JSON.parse(JSON.stringify(lamp, ['state_topic', 'value', 'state'])));
     }
-    lamp.brightness = Math.round(0.2126 * lamp.value.color.r + 0.7152 * lamp.value.color.g + 0.0722 * lamp.value.color.b);
-    mqtt.publish(lamp);
 }
 
 // Меняем состояние лампы в зависимости от полученных данных
 this.setLamp = message => {
     try {
-        let msg = JSON.parse(message);
         let state;
+        let msg = JSON.parse(message);
         if (msg.state) {
-            state = msg.state;
+            state = msg.state.toUpperCase();
         } else {
-            state = msg.toString();
+            state = msg.toUpperCase();
         }
 
-        if (state.toUpperCase() === 'OFF') {
+        if (state === 'OFF') {
             fs.writeFileSync(lamp.path.r, 0);
             fs.writeFileSync(lamp.path.g, 0);
             fs.writeFileSync(lamp.path.b, 0);
         }
-        if (state.toUpperCase() === 'ON') {
+        if (state === 'ON') {
             if (msg.color) {
-                if (msg.color.r !== lamp.value.color.r) {
-                    fs.writeFileSync(lamp.path.r, msg.color.r);
-                }
-                if (msg.color.g !== lamp.value.color.g) {
-                    fs.writeFileSync(lamp.path.g, msg.color.g);
-                }
-                if (msg.color.b !== lamp.value.color.b) {
-                    fs.writeFileSync(lamp.path.b, msg.color.b);
-                }
-            } else {
-                fs.writeFileSync(lamp.path.r, lamp.default_color.r);
-                fs.writeFileSync(lamp.path.g, lamp.default_color.g);
-                fs.writeFileSync(lamp.path.b, lamp.default_color.b);
+                lamp.value.color.r = msg.color.r;
+                lamp.value.color.g = msg.color.g;
+                lamp.value.color.b = msg.color.b;
             }
+            fs.writeFileSync(lamp.path.r, Math.round(lamp.value.color.r * 100 / 255));
+            fs.writeFileSync(lamp.path.g, Math.round(lamp.value.color.g * 100 / 255));
+            fs.writeFileSync(lamp.path.b, Math.round(lamp.value.color.b * 100 / 255));
         }
-    } catch {
-        this.sayText('Произошла ошибка!', 'ru');
+    } catch (e) {
+        common.myLog(e, common.colors.red);
+        //this.sayText('Произошла ошибка!', 'ru');
     }
     this.getLamp();
 }
@@ -232,11 +230,11 @@ this.setPlay = (message) => {
         if (msg.url) {
             url = msg.url;
         } else {
-            url = msg.toString();
+            url = msg;
         }
 
         if (url.length < 5) {
-            audio.play.value.url = 'stop';
+            audio.play.value.url = 'STOP';
             cp.execSync('mpc stop');
         } else {
             audio.play.value.url = url;
@@ -280,10 +278,10 @@ this.setSay = message => {
         if (msg.text) {
             text = msg.text;
         } else {
-            text = msg.toString();
+            text = msg;
         }
 
-        if (audio.play.value.url.toUpperCase() !== 'STOP') {
+        if (audio.play.value.url !== 'STOP') {
             cp.execSync('mpc pause');
         }
 
