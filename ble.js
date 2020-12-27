@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const noble = require('@abandonware/noble');
+const cp = require('child_process');
 
 const common = require('./common');
 const mqtt = require('./mqtt_client');
@@ -10,6 +11,8 @@ const unit_of_measurement = {
     'humidity': '%',
     'battery': '%'
 }
+
+cp.execSync('hciconfig hc0 up');
 
 noble.on('stateChange', state => {
     if (state === 'poweredOn') {
