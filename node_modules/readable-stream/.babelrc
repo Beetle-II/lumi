@@ -1,0 +1,17 @@
+{
+  "presets": [
+    ["@babel/preset-env", {
+      "targets": [
+        "last 2 versions",
+        "not dead",
+        "node 6.0"
+      ],
+      "modules": "commonjs",
+      "exclude": [
+        "transform-regenerator",
+        "transform-typeof-symbol"
+      ],
+      "debug": true
+    }]
+  ]
+}
