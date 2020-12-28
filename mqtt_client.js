@@ -55,7 +55,7 @@ mqtt_client.on('error', err => {
 
 //////////////////
 
-this.publish = device => {
+const publish = device => {
     try {
         mqtt_client.publish(device.state_topic, JSON.stringify(device.value), {retain: false});
     } catch (e) {
@@ -63,10 +63,15 @@ this.publish = device => {
     }
 }
 
-this.publish_homeassistant = device => {
+const publish_homeassistant = device => {
     try {
         mqtt_client.publish(device.config_topic, JSON.stringify(device.homeassistant), {retain: true});
     } catch (e) {
         common.myLog(e, common.colors.red);
     }
+}
+
+module.exports = {
+    publish,
+    publish_homeassistant
 }
