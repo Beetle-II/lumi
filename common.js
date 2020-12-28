@@ -1,6 +1,6 @@
-this.config = require('./config.json');
+const config = require('./config.json');
 
-this.colors = {
+const colors = {
     "black": "\x1b[30m",
     "red": "\x1b[31m",
     "green": "\x1b[32m",
@@ -12,8 +12,15 @@ this.colors = {
     "reset": "\x1b[0m"
 }
 
-this.myLog = function (message, color = "\x1b[37m") {
+const myLog = (message, color = "\x1b[37m") => {
     console.log(color, message, '\x1b[0m');
-}
+};
 
-this.mac = ''
+const mac = ''
+
+module.exports = {
+    config,
+    colors,
+    myLog,
+    mac
+}

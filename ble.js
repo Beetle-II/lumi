@@ -43,7 +43,7 @@ noble.on('discover', async (peripheral) => {
             } else {
                 BLE_devices[peripheral.id][key].value = result.event[key];
                 BLE_devices[peripheral.id][key].lastSeen = Date.now();
-                common.myLog('update: ' + peripheral.id + ', ' + key + ' : ' + result.event[key]);
+                //common.myLog('update: ' + peripheral.id + ', ' + key + ' : ' + result.event[key]);
             }
         });
     } catch (e) {
@@ -53,7 +53,7 @@ noble.on('discover', async (peripheral) => {
 });
 
 // Отправляем информацию об устройствах
-this.getDevices = () => {
+const getDevices = () => {
     let devices = {}
     Object.keys(BLE_devices).forEach(device_id => {
         devices.state_topic = common.config.mqtt_topic + '/' + device_id;
@@ -332,4 +332,8 @@ class miParser {
     parseMoistureEvent = () => ({moisture: this.buffer.readInt8(this.eventOffset + 3)});
 
     toString = () => this.buffer.toString();
+}
+
+module.exports = {
+    getDevices
 }
