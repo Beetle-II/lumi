@@ -12,7 +12,7 @@ const unit_of_measurement = {
     'battery': '%'
 }
 
-cp.execSync('hciconfig hc0 up');
+cp.execSync('hciconfig hci0 up');
 
 setInterval(() => {
     noble.startScanning([], true);
