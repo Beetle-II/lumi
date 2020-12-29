@@ -1,7 +1,9 @@
 {
-	"homeassistant": true,
 	"sensor_debounce_period": 300,
 	"sensor_treshhold": 50,
+
+	"homeassistant": true,
+	"use_ble": false,
 
 	"mqtt_url": "mqtt://адрес mqtt сервера",
 	"mqtt_topic": "lumi",

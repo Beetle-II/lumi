@@ -6,8 +6,11 @@ if (common.config.use_mac_in_mqtt_topic) {
 common.config.mqtt_options.clientId = 'mqtt_js_' + Math.random().toString(16).substr(2, 8);
 
 const gateway = require('./gateway');
-const ble = require('./ble');
 const mqtt = require('./mqtt_client');
+
+if (common.config.use_ble) {
+    const ble = require('./ble');
+}
 
 gateway.setVolume(50);
 
@@ -22,7 +25,9 @@ let timer_ID = setTimeout( function tick() {
 
     // Отправляем состояния устройств
     gateway.getState();
-    ble.getDevices();
+    if (common.config.use_ble) {
+        ble.getDevices();
+    }
 
     timer_ID = setTimeout(tick, common.config.sensor_debounce_period * 1000);
 }, common.config.sensor_debounce_period * 1000);
