@@ -12,11 +12,13 @@ const unit_of_measurement = {
     'battery': '%'
 }
 
-cp.execSync('hciconfig hci0 up');
+if (common.config.use_ble) {
+    cp.execSync('hciconfig hci0 up');
 
-setInterval(() => {
-    noble.startScanning([], true);
-}, 3000);
+    setInterval(() => {
+        noble.startScanning([], true);
+    }, 3000);
+}
 
 noble.on('discover', async (peripheral) => {
     try {

@@ -7,10 +7,7 @@ common.config.mqtt_options.clientId = 'mqtt_js_' + Math.random().toString(16).su
 
 const gateway = require('./gateway');
 const mqtt = require('./mqtt_client');
-
-if (common.config.use_ble) {
-    const ble = require('./ble');
-}
+const ble = require('./ble');
 
 gateway.setVolume(50);
 
