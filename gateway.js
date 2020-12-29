@@ -10,9 +10,12 @@ module.exports = {
     getState,
     getIlluminance,
     getLamp,
+    setLamp,
     getPlay,
+    setPlay,
     getVolume,
-    setVolume
+    setVolume,
+    setSay
 }
 
 const common = require('./common');

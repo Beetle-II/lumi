@@ -15,7 +15,6 @@ const unit_of_measurement = {
 cp.execSync('hciconfig hc0 up');
 
 setInterval(() => {
-    common.myLog('noble.scanning ble', common.colors.green);
     noble.startScanning([], true);
 }, 3000);
 
