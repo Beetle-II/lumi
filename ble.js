@@ -14,14 +14,10 @@ const unit_of_measurement = {
 
 cp.execSync('hciconfig hc0 up');
 
-noble.on('stateChange', state => {
-    if (state === 'poweredOn') {
-        common.myLog('noble.startScanning', common.colors.green);
-        noble.startScanning([], true);
-    } else {
-        noble.stopScanning();
-    }
-});
+setInterval(() => {
+    common.myLog('noble.scanning ble', common.colors.green);
+    noble.startScanning([], true);
+}, 3000);
 
 noble.on('discover', async (peripheral) => {
     try {
@@ -53,7 +49,7 @@ noble.on('discover', async (peripheral) => {
 });
 
 // Отправляем информацию об устройствах
-const getDevices = () => {
+function getDevices() {
     let devices = {}
     Object.keys(BLE_devices).forEach(device_id => {
         devices.state_topic = common.config.mqtt_topic + '/' + device_id;

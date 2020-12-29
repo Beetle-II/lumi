@@ -12,9 +12,9 @@ const colors = {
     "reset": "\x1b[0m"
 }
 
-const myLog = (message, color = "\x1b[37m") => {
+function myLog(message, color = "\x1b[37m") {
     console.log(color, message, '\x1b[0m');
-};
+}
 
 const mac = ''
 

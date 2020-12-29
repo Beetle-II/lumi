@@ -55,7 +55,7 @@ mqtt_client.on('error', err => {
 
 //////////////////
 
-const publish = device => {
+function publish(device) {
     try {
         mqtt_client.publish(device.state_topic, JSON.stringify(device.value), {retain: false});
     } catch (e) {
@@ -63,7 +63,7 @@ const publish = device => {
     }
 }
 
-const publish_homeassistant = device => {
+function publish_homeassistant(device) {
     try {
         mqtt_client.publish(device.config_topic, JSON.stringify(device.homeassistant), {retain: true});
     } catch (e) {

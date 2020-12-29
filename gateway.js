@@ -1,9 +1,19 @@
 const fs = require('fs');
+const os = require('os');
 const cp = require('child_process');
 const crypto = require('crypto');
 const https = require('https');
 const urlParse = require('url').parse;
 const googleTTS = require('google-tts-api');
+
+module.exports = {
+    getState,
+    getIlluminance,
+    getLamp,
+    getPlay,
+    getVolume,
+    setVolume
+}
 
 const common = require('./common');
 const mqtt = require('./mqtt_client');
@@ -114,12 +124,12 @@ let audio = {
 ///////////////
 
 // Отправляем данные о статусе шлюза
-this.getState = () => {
+function getState() {
     mqtt.publish(state);
-    this.getIlluminance();
-    this.getLamp();
-    this.getPlay();
-    this.getVolume();
+    getIlluminance();
+    getLamp();
+    getPlay();
+    getVolume();
 
     if (common.config.homeassistant) {
         mqtt.publish_homeassistant(lamp);
@@ -128,8 +138,17 @@ this.getState = () => {
     }
 }
 
+// Отправляем данные датчика освещенности
+function getIlluminance(treshhold = 0) {
+    let ill_prev = illuminance.value;
+    illuminance.value = parseInt(fs.readFileSync('/sys/bus/iio/devices/iio:device0/in_voltage5_raw'));
+    if (Math.abs(illuminance.value - ill_prev) > treshhold) {
+        mqtt.publish(illuminance);
+    }
+}
+
 // Получаем текущее состояние лампы
-this.getLamp = () => {
+function getLamp() {
     lamp.real_color.r = parseInt(fs.readFileSync(lamp.path.r).toString());
     lamp.real_color.g = parseInt(fs.readFileSync(lamp.path.g).toString());
     lamp.real_color.b = parseInt(fs.readFileSync(lamp.path.b).toString());
@@ -142,12 +161,12 @@ this.getLamp = () => {
     } else {
         lamp.value.state = 'OFF';
         // Публикуем только состояние, чтобы не потерять последний заданный цвет
-        mqtt.publish(JSON.parse(JSON.stringify(lamp, ['state_topic', 'value', 'state'])));
+        mqtt.publish({state_topic: lamp.state_topic, value: {state: lamp.value.state}});
     }
 }
 
 // Меняем состояние лампы в зависимости от полученных данных
-this.setLamp = message => {
+function setLamp(message) {
     try {
         let state;
         let msg = JSON.parse(message);
@@ -174,40 +193,13 @@ this.setLamp = message => {
         }
     } catch (e) {
         common.myLog(e, common.colors.red);
-        //this.sayText('Произошла ошибка!', 'ru');
+        //sayText('Произошла ошибка!', 'ru');
     }
-    this.getLamp();
-}
-
-// Мониторим данные яркости лампы
-/*
-fs.watch(lamp.path.r, (eventType) => {
-    lamp.color.r = parseInt(fs.readFileSync(lamp.path.r).toString());
-    lampSend();
-});
-
-fs.watch(lamp.path.g, (eventType) => {
-    lamp.color.g = parseInt(fs.readFileSync(lamp.path.g).toString());
-    lampSend();
-});
-
-fs.watch(lamp.path.b, (eventType) => {
-    lamp.color.b = parseInt(fs.readFileSync(lamp.path.b).toString());
-    lampSend();
-});
-*/
-
-// Отправляем данные датчика освещенности
-this.getIlluminance = (treshhold = 0) => {
-    let ill_prev = illuminance.value;
-    illuminance.value = parseInt(fs.readFileSync('/sys/bus/iio/devices/iio:device0/in_voltage5_raw'));
-    if (Math.abs(illuminance.value - ill_prev) > treshhold) {
-        mqtt.publish(illuminance);
-    }
+    getLamp();
 }
 
 // Получаем состояние проигрывателя
-this.getPlay = () => {
+function getPlay() {
     audio.play.value.name = cp.execSync("mpc current --format '%name% - %artist% - %title%'").toString().replace(/ -  -/g, ' -').replace('\n', '');
     if (audio.play.value.name.length < 5) {
         audio.play.value.name = '';
@@ -216,14 +208,14 @@ this.getPlay = () => {
 }
 
 // Включаем/выключаем проигрыватель
-this.setPlay = (message) => {
+function setPlay(message) {
     try {
         let msg = JSON.parse(message);
 
         if (msg.volume) {
-            this.setVolume(msg.volume);
+            setVolume(msg.volume);
         } else {
-            this.setVolume(msg);
+            setVolume(msg);
         }
 
         let url;
@@ -242,30 +234,30 @@ this.setPlay = (message) => {
         }
 
         setTimeout(() => {
-            this.getPlay();
+            getPlay();
         }, 1 * 1000);
     } catch (e) {
         common.myLog(e, common.colors.red);
-        this.sayText('Произошла ошибка!', 'ru');
+        sayText('Произошла ошибка!', 'ru');
     }
 }
 
 // Получаем состояние о громкости
-this.getVolume = () => {
-    audio.volume.value = cp.execSync("amixer get Master | awk '$0~/%/{print $4}' | tr -d '[]%'").toString().split(require('os').EOL)[0];
+function getVolume() {
+    audio.volume.value = cp.execSync("amixer get Master | awk '$0~/%/{print $4}' | tr -d '[]%'").toString().split(os.EOL)[0];
     mqtt.publish(audio.volume);
 
     return audio.volume.value;
 }
 
 // Устанавливаем громкость
-this.setVolume = volume => {
+function setVolume(volume) {
     cp.execSync('amixer sset Master ' + volume + '%');
-    this.getVolume();
+    getVolume();
 }
 
 // Произнести указанный текст
-this.setSay = message => {
+function setSay(message) {
     try {
         let msg = JSON.parse(message);
 
@@ -285,28 +277,27 @@ this.setSay = message => {
             cp.execSync('mpc pause');
         }
 
-        let vol = this.getVolume();
+        let vol = getVolume();
         if (msg.volume) {
-            this.setVolume(msg.volume);
+            setVolume(msg.volume);
         }
 
-        this.sayText(text, lang);
+        sayText(text, lang);
 
         if (msg.volume) {
-            this.setVolume(vol);
+            setVolume(vol);
         }
         if (audio.play.value.url !== 'STOP') {
             cp.execSync('mpc play');
         }
     } catch (e) {
         common.myLog(e, common.colors.red);
-        this.sayText('Произошла ошибка!', 'ru');
+        sayText('Произошла ошибка!', 'ru');
     }
 }
 
-this.sayText = (text, lang) => {
+function sayText(text, lang) {
     if (text.length > 3) {
-
         let md5sum = crypto.createHash('md5');
         md5sum.update(text);
         const file = '/tmp/' + md5sum.digest('hex');
@@ -328,7 +319,7 @@ this.sayText = (text, lang) => {
                 });
         }
     }
-};
+}
 
 function downloadFile(url, dest) {
     return new Promise((resolve, reject) => {
@@ -369,10 +360,7 @@ function downloadFile(url, dest) {
     });
 }
 
-//////////////////
-
 // Получаем данные о кнопке
-
 fd = fs.createReadStream(button.device, button.options);
 fd.on('data', function (buf) {
     let i, j, chunk = 16;
@@ -390,7 +378,6 @@ fd.on('data', function (buf) {
         }
     }
 });
-
 fd.on('error', function (e) {
     console.error(e);
 });
