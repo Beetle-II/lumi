@@ -15,9 +15,10 @@ const unit_of_measurement = {
 if (common.config.use_ble) {
     cp.execSync('hciconfig hci0 up');
 
-    setInterval(() => {
-        noble.startScanning([], true);
-    }, 3000);
+    //setInterval(() => {
+    //    noble.startScanning([], true);
+    //}, 3000);
+    noble.startScanning([], true);
 }
 
 noble.on('discover', async (peripheral) => {
