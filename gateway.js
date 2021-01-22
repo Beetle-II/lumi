@@ -205,7 +205,7 @@ function setLamp(message) {
 function getPlay() {
     audio.play.value.name = cp.execSync("mpc current --format '%name% - %artist% - %title%'").toString().replace(/ -  -/g, ' -').replace('\n', '');
     if (audio.play.value.name.length < 5) {
-        audio.play.value.name = '';
+        audio.play.value.name = audio.play.value.url;
     }
     mqtt.publish(audio.play);
 }
@@ -223,9 +223,9 @@ function setPlay(message) {
 
         let url;
         if (msg.url) {
-            url = msg.url;
+            url = msg.url.toLowerCase();
         } else {
-            url = msg;
+            url = msg.toLowerCase();
         }
 
         if (url.length < 5) {
@@ -233,7 +233,11 @@ function setPlay(message) {
             cp.execSync('mpc stop');
         } else {
             audio.play.value.url = url;
-            cp.execSync('mpc clear && mpc add ' + audio.play.value.url + ' && mpc play');
+            if (url.substring(0,4) == 'http') {
+                cp.execSync('mpc clear && mpc add ' + audio.play.value.url + ' && mpc play');
+            } else {
+                cp.execSync('mpg123 ' + url);
+            }
         }
 
         setTimeout(() => {
