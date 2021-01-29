@@ -64,7 +64,7 @@ let lamp = {
     config_topic: 'homeassistant/light/lumi' + common.mac + '_light/config',
     homeassistant: {
         name: 'Lumi Light',
-        uniq_id: 'lumi_light',
+        uniq_id: 'lumi' + common.mac + '_light',
         schema: 'json',
         rgb: true,
         stat_t: common.config.mqtt_topic + '/light',
@@ -80,7 +80,7 @@ let illuminance = {
     config_topic: 'homeassistant/sensor/lumi' + common.mac + '_illuminance/config',
     homeassistant: {
         name: 'Lumi Illuminance',
-        uniq_id: 'lumi_illuminance',
+        uniq_id: 'lumi' + common.mac + '_illuminance',
         dev_cla: 'illuminance',
         unit_of_meas: 'lx',
         stat_t: common.config.mqtt_topic + '/illuminance',
