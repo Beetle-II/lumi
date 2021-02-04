@@ -1,6 +1,6 @@
 # Lumi MQTT
 
-MQTT агент для шлюза Xiaomi DGNWG05LM с прошивкой [OpenWRT 19.07.5](https://github.com/openlumi/xiaomi-gateway-openwrt).  
+MQTT агент для шлюза Xiaomi DGNWG05LM с прошивкой [OpenWRT 19.07.6](https://github.com/openlumi/openwrt/tags).  
 Позволяет взаимодействовать со шлюзом через MQTT.
 
 Взаимодействие | MQTT topic, получение | MQTT topic, управление
@@ -37,7 +37,7 @@ wget https://openlumi.github.io/openwrt-packages/public.key -O /tmp/public.key
 opkg-key add /tmp/public.key
 echo 'src/gz openlumi https://openlumi.github.io/openwrt-packages/packages/19.07/arm_cortex-a9_neon' >> /etc/opkg/customfeeds.conf
 
-opkg update && opkg install node git-http mpc
+opkg update && opkg install node git-http mpc mpd-full
 ```
 
 Скачиваем:

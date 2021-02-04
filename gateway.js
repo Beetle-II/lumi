@@ -56,9 +56,9 @@ let lamp = {
     },
 
     path: {
-        r: '/sys/class/backlight/lumi_r/brightness',
-        g: '/sys/class/backlight/lumi_g/brightness',
-        b: '/sys/class/backlight/lumi_b/brightness'
+        r: '/sys/class/leds/red/brightness',
+        g: '/sys/class/leds/green/brightness',
+        b: '/sys/class/leds/blue/brightness'
     },
 
     config_topic: 'homeassistant/light/lumi' + common.mac + '_light/config',
@@ -190,9 +190,9 @@ function setLamp(message) {
                 lamp.value.color.g = msg.color.g;
                 lamp.value.color.b = msg.color.b;
             }
-            fs.writeFileSync(lamp.path.r, Math.round(lamp.value.color.r * 100 / 255));
-            fs.writeFileSync(lamp.path.g, Math.round(lamp.value.color.g * 100 / 255));
-            fs.writeFileSync(lamp.path.b, Math.round(lamp.value.color.b * 100 / 255));
+            fs.writeFileSync(lamp.path.r, lamp.value.color.r);
+            fs.writeFileSync(lamp.path.g, lamp.value.color.g);
+            fs.writeFileSync(lamp.path.b, lamp.value.color.b);
         }
     } catch (e) {
         common.myLog(e, common.colors.red);
