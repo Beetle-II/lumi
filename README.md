@@ -43,6 +43,7 @@ opkg update && opkg install node git-http mpc mpd-full
 Скачиваем:
 
 ```
+mkdir /opt
 cd /opt
 git clone https://github.com/Beetle-II/lumi.git
 cd lumi
