@@ -277,6 +277,10 @@ function setSay(message) {
     try {
         let msg = JSON.parse(message);
 
+        if (msg.volume) {
+            setVolume(msg.volume);
+        }
+
         let lang = 'ru';
         if (msg.lang) {
             lang = msg.lang;
