@@ -92,6 +92,7 @@ node /opt/lumi/lumi.js
 Проверяем что пошли данные от датчиков и добавляем в автозапуск:
 
 ```
+cd /opt/lumi
 chmod +x lumi
 cp lumi /etc/init.d/lumi
 /etc/init.d/lumi enable

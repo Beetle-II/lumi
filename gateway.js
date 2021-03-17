@@ -277,6 +277,11 @@ function setSay(message) {
     try {
         let msg = JSON.parse(message);
 
+        if(msg.toLowerCase() === 'stop') {
+            cp.execSync('killall mpg123');
+            return;
+        }
+
         if (msg.volume) {
             setVolume(msg.volume);
         }
