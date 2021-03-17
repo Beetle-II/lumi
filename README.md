@@ -1,6 +1,6 @@
 # Lumi MQTT
 
-MQTT агент для шлюза Xiaomi DGNWG05LM с прошивкой [OpenWRT 19.07.6](https://github.com/openlumi/openwrt/tags).  
+MQTT агент для шлюза Xiaomi DGNWG05LM с прошивкой [OpenWRT 19.07.7](https://github.com/openlumi/openwrt/tags).  
 Позволяет взаимодействовать со шлюзом через MQTT.
 
 Взаимодействие | MQTT topic, получение | MQTT topic, управление

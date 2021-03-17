@@ -242,7 +242,7 @@ function setPlay(message) {
             cp.execSync('mpc stop');
         } else {
             audio.play.value.url = url;
-            if (url.substring(0,4) == 'http') {
+            if (url.substring(0, 4) == 'http') {
                 cp.execSync('mpc clear && mpc add ' + audio.play.value.url + ' && mpc play');
             } else {
                 cp.execSync('mpg123 ' + url);
@@ -277,10 +277,15 @@ function setSay(message) {
     try {
         let msg = JSON.parse(message);
 
-        if(msg.toLowerCase() === 'stop') {
-            cp.execSync('killall mpg123');
-            return;
+/*
+        try {
+            if (msg.toLowerCase() === 'stop') {
+                cp.execSync('killall mpg123');
+                return;
+            }
+        } finally {
         }
+*/
 
         if (msg.volume) {
             setVolume(msg.volume);
