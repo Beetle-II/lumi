@@ -15,7 +15,8 @@ module.exports = {
     setPlay,
     getVolume,
     setVolume,
-    setSay
+    setSay,
+    setAlarm
 }
 
 const common = require('./common');
@@ -125,6 +126,8 @@ let audio = {
     }
 }
 
+let timer_alarm;
+
 ///////////////
 
 // Отправляем данные о статусе шлюза
@@ -158,7 +161,6 @@ function getLamp() {
     lamp.real_color.b = parseInt(fs.readFileSync(lamp.path.b).toString());
 
     lamp.value.brightness = Math.round(0.2126 * lamp.real_color.r + 0.7152 * lamp.real_color.g + 0.0722 * lamp.real_color.b);
-    common.myLog(lamp.value, common.colors.cyan);
 
     if (lamp.real_color.r + lamp.real_color.g + lamp.real_color.b > 0) {
         lamp.value.state = 'ON';
@@ -323,6 +325,28 @@ function setSay(message) {
     } catch (e) {
         common.myLog(e, common.colors.red);
         sayText('Произошла ошибка!', 'ru');
+    }
+}
+
+// Устанавливаем громкость
+function setAlarm(message) {
+    let msg = message.toString().toLowerCase();
+
+    if (msg === 'on') {
+        // Запускаем таймер 2 для публикации состояний датчиков
+        timer_alarm = setTimeout( function tick() {
+            if (lamp.value.state === 'ON') {
+                setLamp('{"state":"OFF"}');
+            } else {
+                setLamp('{"state":"ON"}');
+            }
+            timer_alarm = setTimeout(tick, 2000);
+        }, 2000);
+    } else {
+        if (typeof timer_alarm !== 'undefined') {
+            clearTimeout(timer_alarm);
+            setLamp('{"state":"OFF"}');
+        }
     }
 }
 

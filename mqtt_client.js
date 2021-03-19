@@ -43,6 +43,10 @@ mqtt_client.on('message', (topic, message) => {
                 // lumi/say/set
                 gateway.setSay(message);
                 break;
+            case 'alarm':
+                // lumi/alarm/set
+                gateway.setAlarm(message);
+                break;
         }
     } catch (err) {
         common.myLog(err, common.colors.red);

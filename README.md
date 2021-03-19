@@ -104,8 +104,10 @@ cp lumi /etc/init.d/lumi
 ### Обновить до актуальной версии:
 
 ```
+/etc/init.d/lumi stop
 cd /opt/lumi
 git pull
+/etc/init.d/lumi start
 ```
 
 ---
@@ -126,3 +128,6 @@ lumi/audio/volume/set | 30 | Именить громкость на 30
 ||
 lumi/say/set | {"text": "Привет", "volume": 80} | Произнести 'Привет' с громкостью 80
 lumi/say/set | "Привет" | Произнести 'Привет'
+||
+lumi/alarm/set | "ON" | Включить мигание лампой
+lumi/alarm/set | "OFF" | Выключить мигание лампой
