@@ -7,6 +7,7 @@ MQTT агент для шлюза Xiaomi DGNWG05LM с прошивкой [OpenWR
 --- | --- | ---
 Встроенный датчик освещения | lumi/illumination
 Подсветка | lumi/lamp | lumi/lamp/set
+Уведомление подсветкой |  | lumi/alarm/set
 Кнопка | lumi/button
 Воспроизводимый url, volume | lumi/audio/play | lumi/audio/play/set
 Громкость | lumi/audio/volume | lumi/audio/volume/set
@@ -117,7 +118,7 @@ git pull
 Топик | Значение | Описание
 ---|---|---
 lumi/light/set | {"color":{"r":50,"g":50,"b":50},"state":"ON"} | Включить подсветку
-lumi/light/set | "OFF" | Выключить подсветку
+lumi/light/set | {"state":"OFF"} | Выключить подсветку
 ||
 lumi/audio/play/set | "http://ep128.hostingradio.ru:8030/ep128" | Включить Радио Европа+
 lumi/audio/play/set | "/tmp/test.mp3" | Воспроизвести локальный звуковой файл
@@ -129,5 +130,5 @@ lumi/audio/volume/set | 30 | Именить громкость на 30
 lumi/say/set | {"text": "Привет", "volume": 80} | Произнести 'Привет' с громкостью 80
 lumi/say/set | "Привет" | Произнести 'Привет'
 ||
-lumi/alarm/set | "ON" | Включить мигание лампой
-lumi/alarm/set | "OFF" | Выключить мигание лампой
+lumi/alarm/set | {"color":{"r":50,"g":50,"b":50},"state":"ON"} | Включить мигание лампой
+lumi/alarm/set | {"state":"OFF"} | Выключить мигание лампой

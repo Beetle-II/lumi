@@ -330,23 +330,38 @@ function setSay(message) {
 
 // Устанавливаем громкость
 function setAlarm(message) {
-    let msg = message.toString().toLowerCase();
+    try {
+        let msg = JSON.parse(message);
 
-    if (msg === 'on') {
-        // Запускаем таймер 2 для публикации состояний датчиков
-        timer_alarm = setTimeout( function tick() {
-            if (lamp.value.state === 'ON') {
-                setLamp('{"state":"OFF"}');
-            } else {
-                setLamp('{"state":"ON"}');
-            }
-            timer_alarm = setTimeout(tick, 2000);
-        }, 2000);
-    } else {
-        if (typeof timer_alarm !== 'undefined') {
-            clearTimeout(timer_alarm);
-            setLamp('{"state":"OFF"}');
+        if (msg.state) {
+            state = msg.state.toUpperCase();
+        } else {
+            state = msg.toUpperCase();
         }
+
+        if (state === 'OFF') {
+            if (typeof timer_alarm !== 'undefined') {
+                clearTimeout(timer_alarm);
+                setLamp('{"state":"OFF"}');
+            }
+        }
+        if (state === 'ON') {
+            if (msg.color) {
+                setLamp(message);
+            }
+
+            // Запускаем таймер мигания лампой
+            timer_alarm = setTimeout(function tick() {
+                if (lamp.value.state === 'ON') {
+                    setLamp('{"state":"OFF"}');
+                } else {
+                    setLamp('{"state":"ON"}');
+                }
+                timer_alarm = setTimeout(tick, 2000);
+            }, 2000);
+        }
+    } catch (e) {
+        common.myLog(e, common.colors.red);
     }
 }
 
