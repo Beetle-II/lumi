@@ -67,6 +67,14 @@ function publish(device) {
     }
 }
 
+function publish_value(device) {
+    try {
+        mqtt_client.publish(device.state_topic, device.value, {retain: false});
+    } catch (e) {
+        common.myLog(e, common.colors.red);
+    }
+}
+
 function publish_homeassistant(device) {
     try {
         mqtt_client.publish(device.config_topic, JSON.stringify(device.homeassistant), {retain: true});
