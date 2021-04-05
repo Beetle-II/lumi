@@ -55,10 +55,14 @@ cp config_example.json config.json
 
 ```json
 {
-  "homeassistant": true,
-  "use_ble": false,
   "sensor_debounce_period": 300,
   "sensor_treshhold": 50,
+  
+  "homeassistant": true,
+  "use_ble": false,
+
+  "delete_file": false,
+  
   "mqtt_url": "mqtt://адрес вашего сервера",
   "mqtt_topic": "lumi",
   "use_mac_in_mqtt_topic": false,
@@ -78,6 +82,8 @@ cp config_example.json config.json
 --- | ---
 "homeassistant": true | уведомлять MQTT брокер об устройствах шлюза. Помогает добавлять устройства в HomeAssistant
 "use_ble": false | включить сканирование и отправку данных c BLE устройств
+||
+"delete_file": false | кешировать файлы TTS после воспроизведения
 ||
 "sensor_debounce_period": 300 | период отправки данных о состоянии устройств (в секундах)
 "sensor_treshhold": 50 | порог изменения состояния датчика, для моментальной отправки данных

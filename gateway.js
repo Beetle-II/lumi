@@ -314,7 +314,13 @@ function setSay(message) {
             setVolume(msg.volume);
         }
 
-        sayText(text, lang);
+        if (text.length < 200) {
+            sayText(text, lang);
+        } else {
+            let split = text.indexOf(' ', 180);
+            sayText(text.substring(0, split), lang);
+            sayText(text.substring(split), lang);
+        }
 
         if (msg.volume) {
             setVolume(vol);
@@ -381,7 +387,10 @@ function sayText(text, lang) {
                 .then(() => {
                     //console.log('Download success');
                     cp.execSync('mpg123 ' + file);
-                    //fs.unlinkSync(file);
+
+                    if (common.config.delete_file) {
+                        fs.unlinkSync(file);
+                    }
                 })
                 .catch((err) => {
                     console.error(err.stack);
