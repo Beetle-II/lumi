@@ -243,7 +243,7 @@ function getIlluminance(treshhold = 0) {
     let ill_prev = illuminance.value;
     illuminance.value = Math.round(parseInt(fs.readFileSync('/sys/bus/iio/devices/iio:device0/in_voltage5_raw')) * 0.25);
     if (Math.abs(illuminance.value - ill_prev) > treshhold) {
-        mqtt.publish(illuminance );
+        mqtt.publish(illuminance);
     }
 }
 
