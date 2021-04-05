@@ -123,7 +123,7 @@ git pull
 Топик | Значение | Описание
 ---|---|---
 lumi/light/set | {"color":{"r":50,"g":50,"b":50},"state":"ON"} | Включить подсветку
-lumi/light/set | {"state": "ON", "flash": 2} | Серия из 2 вспышек
+lumi/light/set | {"state": "ON", "flash": 2} | Серия из 2 вспышек. После серии из 2х вспышек alarm автоматически отключится
 lumi/light/set | {"state":"OFF"} | Выключить подсветку
 ||
 lumi/audio/play/set | "http://ep128.hostingradio.ru:8030/ep128" | Включить Радио Европа+
@@ -137,7 +137,7 @@ lumi/say/set | {"text": "Привет", "volume": 80} | Произнести 'П
 lumi/say/set | "Привет" | Произнести 'Привет'
 ||
 lumi/alarm/set | {"color":{"r":50,"g":50,"b":50},"state":"ON"} | Включить мигание лампой
-lumi/alarm/set | {"state":"OFF"} | Выключить мигание лампой
+lumi/alarm/set | {"state":"OFF"} | Выключить мигание лампой. Параметры подсветки будут возвращены к предыдущим значениям
 
 
 История версий
