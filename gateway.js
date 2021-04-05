@@ -16,11 +16,21 @@ module.exports = {
     getVolume,
     setVolume,
     setSay,
-    setAlarm
+    setAlarm,
+    setAlarm2,
+    savePreviousColour,
+    loadPreviousColour
 }
 
 const common = require('./common');
 const mqtt = require('./mqtt_client');
+
+let clicks = 1;
+let flash_ID = 0;
+let alarm = false;
+let t0 = new Date();
+let t1 = new Date();
+let timerID = 0;
 
 //////////////////
 
@@ -75,6 +85,20 @@ let lamp = {
     }
 }
 
+// Предыдущие параметры лампы
+let prev_lamp = {
+    state_topic: common.config.mqtt_topic + '/prev_light',
+    value: {
+        color: {
+            r: 0,
+            g: 0,
+            b: 0
+        },
+        brightness: 0,
+        state: 'OFF'
+    }
+}
+
 let illuminance = {
     state_topic: common.config.mqtt_topic + '/illuminance',
     value: 0,
@@ -91,8 +115,8 @@ let illuminance = {
 }
 
 let button = {
-    state_topic: common.config.mqtt_topic + '/button',
-    value: 0,
+    state_topic: common.config.mqtt_topic + '/button/action',
+    value: '',
 
     device: '/dev/input/event0',
     options: {
@@ -100,15 +124,6 @@ let button = {
         encoding: null,
         fd: null,
         autoClose: true
-    },
-
-    config_topic: 'homeassistant/device_automation/lumi' + common.mac + '_button/config',
-    homeassistant: {
-        automation_type: 'trigger',
-        topic: common.config.mqtt_topic + '/button',
-        type: 'button_short_press',
-        subtype: 'button_1',
-        device: device
     }
 }
 
@@ -130,9 +145,87 @@ let timer_alarm;
 
 ///////////////
 
+// Публикуем в MQTT данные для кнопки в HA AutoDiscovery 
+function publishButtonCfg() {
+    if (common.config.homeassistant) {
+        let button_cfg = {
+            config_topic: 'homeassistant/device_automation/lumi' + common.mac + '_button/action_single/config',
+            homeassistant: {
+                automation_type: 'trigger',
+                device: device,
+                payload: 'single',
+                subtype: 'single',
+                topic: common.config.mqtt_topic + '/button/action',
+                type: 'action'
+            }
+        }
+        mqtt.publish_homeassistant(button_cfg);
+        button_cfg = {
+            config_topic: 'homeassistant/device_automation/lumi' + common.mac + '_button/action_double/config',
+            homeassistant: {
+                automation_type: 'trigger',
+                device: device,
+                payload: 'double',
+                subtype: 'double',
+                topic: common.config.mqtt_topic + '/button/action',
+                type: 'action'
+            }
+        }
+        mqtt.publish_homeassistant(button_cfg);
+        button_cfg = {
+            config_topic: 'homeassistant/device_automation/lumi' + common.mac + '_button/action_triple/config',
+            homeassistant: {
+                automation_type: 'trigger',
+                device: device,
+                payload: 'triple',
+                subtype: 'triple',
+                topic: common.config.mqtt_topic + '/button/action',
+                type: 'action'
+            }
+        }
+        mqtt.publish_homeassistant(button_cfg);
+        button_cfg = {
+            config_topic: 'homeassistant/device_automation/lumi' + common.mac + '_button/action_quadruple/config',
+            homeassistant: {
+                automation_type: 'trigger',
+                device: device,
+                payload: 'quadruple',
+                subtype: 'quadruple',
+                topic: common.config.mqtt_topic + '/button/action',
+                type: 'action'
+            }
+        }
+        mqtt.publish_homeassistant(button_cfg);
+        button_cfg = {
+            config_topic: 'homeassistant/device_automation/lumi' + common.mac + '_button/action_many/config',
+            homeassistant: {
+                automation_type: 'trigger',
+                device: device,
+                payload: 'many',
+                subtype: 'many',
+                topic: common.config.mqtt_topic + '/button/action',
+                type: 'action'
+            }
+        }
+        mqtt.publish_homeassistant(button_cfg);
+        button_cfg = {
+            config_topic: 'homeassistant/sensor/lumi' + common.mac + '_button/action/config',
+            homeassistant: {
+                device: device,
+                icon: 'mdi:gesture-double-tap',
+                json_attributes_topic: common.config.mqtt_topic + '/button/action',
+                name: 'Lumi action',
+                state_topic: common.config.mqtt_topic + '/button/action',
+                unique_id: 'button'+common.mac+"_action"
+            }
+        }
+        mqtt.publish_homeassistant(button_cfg);
+    }
+}
+
 // Отправляем данные о статусе шлюза
 function getState() {
-    mqtt.publish(state);
+    mqtt.publish_value(state);
     getIlluminance();
     getLamp();
     getPlay();
@@ -141,16 +234,16 @@ function getState() {
     if (common.config.homeassistant) {
         mqtt.publish_homeassistant(lamp);
         mqtt.publish_homeassistant(illuminance);
-        mqtt.publish_homeassistant(button);
+        publishButtonCfg();
     }
 }
 
 // Отправляем данные датчика освещенности
 function getIlluminance(treshhold = 0) {
     let ill_prev = illuminance.value;
-    illuminance.value = parseInt(fs.readFileSync('/sys/bus/iio/devices/iio:device0/in_voltage5_raw'));
+    illuminance.value = Math.round(parseInt(fs.readFileSync('/sys/bus/iio/devices/iio:device0/in_voltage5_raw')) * 0.25);
     if (Math.abs(illuminance.value - ill_prev) > treshhold) {
-        mqtt.publish(illuminance);
+        mqtt.publish(illuminance );
     }
 }
 
@@ -183,11 +276,17 @@ function setLamp(message) {
             state = msg.toUpperCase();
         }
 
+        if (msg.flash) {
+            common.myLog("Flash directive", common.colors.yellow);
+            setAlarmCount(msg.flash);
+        }
+
         if (state === 'OFF') {
             fs.writeFileSync(lamp.path.r, 0);
             fs.writeFileSync(lamp.path.g, 0);
             fs.writeFileSync(lamp.path.b, 0);
         }
+
         if (state === 'ON') {
             if (msg.color) {
                 lamp.value.color.r = msg.color.r;
@@ -234,9 +333,11 @@ function setPlay(message) {
 
         let url;
         if (msg.url) {
+            //url = msg.url.toLowerCase();
             url = msg.url;
         } else {
-            url = msg;
+            //url = msg.toLowerCase();
+            url = msg
         }
 
         if (url.length < 5) {
@@ -244,10 +345,10 @@ function setPlay(message) {
             cp.execSync('mpc stop');
         } else {
             audio.play.value.url = url;
-            if (url.toLowerCase().substring(0, 4) == 'http') {
+            if (url.substring(0, 4) == 'http') {
                 cp.execSync('mpc clear && mpc add ' + audio.play.value.url + ' && mpc play');
             } else {
-                cp.execSync('mpg123 "' + audio.play.value.url + '"');
+                cp.execSync('mpg123 \'' + url + '\'');
             }
         }
 
@@ -314,13 +415,7 @@ function setSay(message) {
             setVolume(msg.volume);
         }
 
-        if (text.length < 200) {
-            sayText(text, lang);
-        } else {
-            let split = text.indexOf(' ', 180);
-            sayText(text.substring(0, split), lang);
-            sayText(text.substring(split), lang);
-        }
+        sayText(text, lang);
 
         if (msg.volume) {
             setVolume(vol);
@@ -334,7 +429,38 @@ function setSay(message) {
     }
 }
 
-// Устанавливаем громкость
+function loadPreviousColour() {
+    lamp.value.color.r = prev_lamp.value.color.r;
+    lamp.value.color.g = prev_lamp.value.color.g;
+    lamp.value.color.b = prev_lamp.value.color.b;
+
+    lamp.value.brightness = prev_lamp.value.brightness;
+    lamp.value.state = prev_lamp.value.state
+
+    if (prev_lamp.value.state == 'ON') {
+            setLamp('{"state":"ON"}');
+            mqtt.publish(lamp);
+    } else {
+            fs.writeFileSync(lamp.path.r, 0);
+            fs.writeFileSync(lamp.path.g, 0);
+            fs.writeFileSync(lamp.path.b, 0);
+            setLamp('{"state":"OFF"}');
+    }
+}
+
+function savePreviousColour() {
+    prev_lamp.value.color.r = lamp.value.color.r;
+    prev_lamp.value.color.g = lamp.value.color.g;
+    prev_lamp.value.color.b = lamp.value.color.b;
+
+    prev_lamp.value.brightness = Math.round(0.2126 * lamp.real_color.r + 0.7152 * lamp.real_color.g + 0.0722 * lamp.real_color.b);
+    prev_lamp.value.state = lamp.value.state
+
+    //mqtt.publish(prev_lamp);
+}
+
+
+// Устанавливаем режим мигания одним цветом
 function setAlarm(message) {
     try {
         let msg = JSON.parse(message);
@@ -345,37 +471,196 @@ function setAlarm(message) {
             state = msg.toUpperCase();
         }
 
+        if (alarm) {
+            clearTimeout(timer_alarm);
+            common.myLog("Alarm в текущее время уже запущен. Отключаем предыдущий вызов", common.colors.yellow);
+        }
+
         if (state === 'OFF') {
             if (typeof timer_alarm !== 'undefined') {
                 clearTimeout(timer_alarm);
                 setLamp('{"state":"OFF"}');
+                loadPreviousColour();
+                alarm = false;
+                common.myLog("Alarm отключен", common.colors.yellow);
             }
         }
         if (state === 'ON') {
+            savePreviousColour();
             if (msg.color) {
                 setLamp(message);
+                alarm = true;
+                common.myLog("Alarm включен", common.colors.yellow);
             }
 
             // Запускаем таймер мигания лампой
             timer_alarm = setTimeout(function tick() {
-                if (lamp.value.state === 'ON') {
-                    setLamp('{"state":"OFF"}');
-                } else {
+                if (flash_ID == 0) {
+                    flash_ID++;
                     setLamp('{"state":"ON"}');
+                    timer_alarm = setTimeout(tick, 1000);
                 }
-                timer_alarm = setTimeout(tick, 2000);
-            }, 2000);
+                else if (flash_ID == 1) {
+                    flash_ID++;
+                    setLamp('{"state":"OFF"}');
+                    timer_alarm = setTimeout(tick, 500);
+                }
+                else if (flash_ID == 2) {
+                    flash_ID++;
+                    setLamp('{"state":"ON"}');
+                    timer_alarm = setTimeout(tick, 50);
+                }
+                else if (flash_ID == 3) {
+                    flash_ID++;
+                    setLamp('{"state":"OFF"}');
+                    timer_alarm = setTimeout(tick, 100);
+                }
+                else if (flash_ID == 4) {
+                    flash_ID++;
+                    setLamp('{"state":"ON"}');
+                    timer_alarm = setTimeout(tick, 50);
+                }
+                else if (flash_ID == 5) {
+                    flash_ID = 0;
+                    setLamp('{"state":"OFF"}');
+                    timer_alarm = setTimeout(tick, 1500);
+                }
+            }, 500);
         }
     } catch (e) {
         common.myLog(e, common.colors.red);
     }
 }
 
+// Устанавливаем режим мигания двумя цветами
+function setAlarm2(message) {
+    try {
+        let msg = JSON.parse(message);
+
+        if (msg.state) {
+            state = msg.state.toUpperCase();
+        } else {
+            state = msg.toUpperCase();
+        }
+
+        if (alarm) {
+            clearTimeout(timer_alarm);
+            common.myLog("Alarm в текущее время уже запущен. Отключаем предыдущий вызов", common.colors.yellow);
+        }
+
+        if (state === 'OFF') {
+            if (typeof timer_alarm !== 'undefined') {
+                clearTimeout(timer_alarm);
+                setLamp('{"state":"OFF"}');
+                loadPreviousColour();
+                alarm = false;
+                common.myLog("Alarm отключен", common.colors.yellow);
+            }
+        }
+        if (state === 'ON') {
+            savePreviousColour();
+            if (msg.color) {
+                setLamp(message);
+                alarm = true;
+                common.myLog("Alarm включен", common.colors.yellow);
+            }
+
+            // Запускаем таймер мигания лампой
+            timer_alarm = setTimeout(function tick() {
+                if (flash_ID == 0) {
+                    flash_ID++;
+                    setLamp('{"state":"ON"}');
+                    timer_alarm = setTimeout(tick, 1000);
+                }
+                else if (flash_ID == 1) {
+                    flash_ID++;
+                    setLamp('{"state":"OFF"}');
+                    timer_alarm = setTimeout(tick, 500);
+                }
+                else if (flash_ID == 2) {
+                    flash_ID++;
+                    setLamp('{"state":"ON"}');
+                    timer_alarm = setTimeout(tick, 50);
+                }
+                else if (flash_ID == 3) {
+                    flash_ID++;
+                    setLamp('{"state":"OFF"}');
+                    timer_alarm = setTimeout(tick, 100);
+                }
+                else if (flash_ID == 4) {
+                    flash_ID++;
+                    setLamp('{"state":"ON"}');
+                    timer_alarm = setTimeout(tick, 50);
+                }
+                else if (flash_ID == 5) {
+                    flash_ID = 0;
+                    setLamp('{"state":"OFF"}');
+                    timer_alarm = setTimeout(tick, 500);
+                }
+            }, 500);
+        }
+    } catch (e) {
+        common.myLog(e, common.colors.red);
+    }
+}
+
+// Устанавливаем режим мигания одним цветом с ограничением количества вспышек
+function setAlarmCount(counter) {
+    try {
+        if (alarm) {
+            clearTimeout(timer_alarm);
+            common.myLog("Alarm в текущее время уже запущен. Отключаем предыдущий вызов", common.colors.yellow);
+        }
+        savePreviousColour();
+            // Запускаем таймер мигания лампой
+            timer_alarm = setTimeout(function tick() {
+                if (flash_ID == 0) {
+                    flash_ID++;
+                    setLamp('{"state":"ON"}');
+                    timer_alarm = setTimeout(tick, 1000);
+                }
+                else if (flash_ID == 1) {
+                    flash_ID++;
+                    setLamp('{"state":"OFF"}');
+                    timer_alarm = setTimeout(tick, 500);
+                }
+                else if (flash_ID == 2) {
+                    flash_ID++;
+                    setLamp('{"state":"ON"}');
+                    timer_alarm = setTimeout(tick, 50);
+                }
+                else if (flash_ID == 3) {
+                    flash_ID++;
+                    setLamp('{"state":"OFF"}');
+                    timer_alarm = setTimeout(tick, 100);
+                }
+                else if (flash_ID == 4) {
+                    flash_ID++;
+                    setLamp('{"state":"ON"}');
+                    timer_alarm = setTimeout(tick, 50);
+                }
+                else if (flash_ID == 5) {
+                    flash_ID = 0;
+                    setLamp('{"state":"OFF"}');
+                    if (counter == 1) {
+                        loadPreviousColour();
+                    } else {
+                        timer_alarm = setTimeout(tick, 1500);
+                        counter--;
+                    }
+                }
+            }, 500);
+    } catch (e) {
+        common.myLog(e, common.colors.red);
+    }
+}
+
+
 function sayText(text, lang) {
     if (text.length > 3) {
         let md5sum = crypto.createHash('md5');
         md5sum.update(text);
-        const file = '/tmp/' + md5sum.digest('hex') + '.mp3';
+        const file = '/tmp/' + md5sum.digest('hex');
 
         if (fs.existsSync(file)) {
             cp.execSync('mpg123 ' + file);
@@ -387,9 +672,9 @@ function sayText(text, lang) {
                 .then(() => {
                     //console.log('Download success');
                     cp.execSync('mpg123 ' + file);
-
                     if (common.config.delete_file) {
                         fs.unlinkSync(file);
+                        common.myLog("Deleting file " + file + " after use", common.colors.yellow);
                     }
                 })
                 .catch((err) => {
@@ -438,6 +723,14 @@ function downloadFile(url, dest) {
     });
 }
 
+
+function publishMQTTbutton() {
+    console.log('',button.value,'click detected');
+    mqtt.publish_value(button);
+    button.value= '';
+    mqtt.publish_value(button);
+}
+
 // Получаем данные о кнопке
 fd = fs.createReadStream(button.device, button.options);
 fd.on('data', function (buf) {
@@ -451,8 +744,36 @@ fd.on('data', function (buf) {
             value: buf.readUInt32LE(i + 12)
         };
         if (event.type == 1 && event.code == 256) {
-            button.value = event.value;
-            mqtt.publish(button);
+            t1 = new Date();
+            if (event.value == 1) {
+                if (t1 - t0 < common.config.button_click_duration) {
+                    clearTimeout(timerID);
+                    clicks++;
+                    t0 = t1;
+                    timerID = setTimeout (publishMQTTbutton, common.config.button_click_duration);
+                } else {
+                    clearTimeout(timerID);
+                    clicks= 1;
+                    t0 = t1;
+                    timerID = setTimeout (publishMQTTbutton, common.config.button_click_duration);
+                }
+            switch (clicks) {
+                case 1: 
+                    button.value = 'single';
+                    break;
+                case 2: 
+                    button.value = 'double';
+                    break;
+                case 3: 
+                    button.value = 'triple';
+                    break;
+                case 4:
+                    button.value = 'quadruple';
+                    break;
+                default: 
+                    button.value = 'many';
+                }
+            }
         }
     }
 });
