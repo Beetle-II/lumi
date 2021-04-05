@@ -57,10 +57,10 @@ cp config_example.json config.json
 {
   "sensor_debounce_period": 300,
   "sensor_treshhold": 50,
-	"button_click_duration": 300,  
+  "button_click_duration": 300,  
   "homeassistant": true,
   "use_ble": false,
-	"delete_tts_file": true,
+  "delete_tts_file": true,
   "mqtt_url": "mqtt://адрес вашего сервера",
   "mqtt_topic": "lumi",
   "use_mac_in_mqtt_topic": false,
