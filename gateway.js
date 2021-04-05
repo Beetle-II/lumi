@@ -234,9 +234,9 @@ function setPlay(message) {
 
         let url;
         if (msg.url) {
-            url = msg.url.toLowerCase();
+            url = msg.url;
         } else {
-            url = msg.toLowerCase();
+            url = msg;
         }
 
         if (url.length < 5) {
@@ -244,10 +244,10 @@ function setPlay(message) {
             cp.execSync('mpc stop');
         } else {
             audio.play.value.url = url;
-            if (url.substring(0, 4) == 'http') {
+            if (url.toLowerCase().substring(0, 4) == 'http') {
                 cp.execSync('mpc clear && mpc add ' + audio.play.value.url + ' && mpc play');
             } else {
-                cp.execSync('mpg123 ' + url);
+                cp.execSync('mpg123 "' + audio.play.value.url + '"');
             }
         }
 
@@ -369,7 +369,7 @@ function sayText(text, lang) {
     if (text.length > 3) {
         let md5sum = crypto.createHash('md5');
         md5sum.update(text);
-        const file = '/tmp/' + md5sum.digest('hex');
+        const file = '/tmp/' + md5sum.digest('hex') + '.mp3';
 
         if (fs.existsSync(file)) {
             cp.execSync('mpg123 ' + file);
