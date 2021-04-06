@@ -59,9 +59,9 @@ mqtt_client.on('error', err => {
 
 //////////////////
 
-function publish(device) {
+function publish(device, retain = false) {
     try {
-        mqtt_client.publish(device.state_topic, JSON.stringify(device.value), {retain: false});
+        mqtt_client.publish(device.state_topic, JSON.stringify(device.value), {retain: retain});
     } catch (e) {
         common.myLog(e, common.colors.red);
     }

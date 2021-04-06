@@ -132,7 +132,7 @@ let timer_alarm;
 
 // Отправляем данные о статусе шлюза
 function getState() {
-    mqtt.publish(state);
+    mqtt.publish(state, true);
     getIlluminance();
     getLamp();
     getPlay();
