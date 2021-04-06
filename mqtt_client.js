@@ -69,7 +69,7 @@ function publish_json(device, retain = false) {
 
 function publish_value(device, retain = false) {
     try {
-        mqtt_client.publish(device.state_topic, device.value, {retain: retain});
+        mqtt_client.publish(device.state_topic, device.value.toString(), {retain: retain});
     } catch (e) {
         common.myLog(e, common.colors.red);
     }

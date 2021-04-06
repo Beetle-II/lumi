@@ -95,7 +95,7 @@ let illuminance = {
 }
 
 let button = {
-    state_topic: common.config.mqtt_topic + '/button',
+    state_topic: common.config.mqtt_topic + '/button/action',
     value: 0,
 
     device: '/dev/input/event0',
@@ -106,13 +106,56 @@ let button = {
         autoClose: true
     },
 
-    config_topic: 'homeassistant/device_automation/lumi' + common.mac + '_button/config',
-    homeassistant: {
-        automation_type: 'trigger',
-        topic: common.config.mqtt_topic + '/button',
-        type: 'button_short_press',
-        subtype: 'button_1',
-        device: device
+    t0: new Date(),
+    t1: new Date(),
+    timer: 0,
+
+    action: {
+        config_topic: 'homeassistant/sensor/lumi' + common.mac + '_button/action/config',
+        homeassistant: {
+            name: 'Lumi Button Action',
+            unique_id: 'lumi' + common.mac + "_button",
+            icon: 'mdi:gesture-double-tap',
+            json_attributes_topic: common.config.mqtt_topic + '/button/action',
+            state_topic: common.config.mqtt_topic + '/button/action',
+            device: device
+        }
+    },
+
+    action_single: {
+        config_topic: 'homeassistant/device_automation/lumi' + common.mac + '_button/action_1/config',
+        homeassistant: {
+            automation_type: 'trigger',
+            topic: common.config.mqtt_topic + '/button/action',
+            type: 'button_short_press',
+            subtype: 'Button',
+            payload: 1,
+            device: device
+        }
+    },
+
+    action_double: {
+        config_topic: 'homeassistant/device_automation/lumi' + common.mac + '_button/action_2/config',
+        homeassistant: {
+            automation_type: 'trigger',
+            topic: common.config.mqtt_topic + '/button/action',
+            type: 'button_double_press',
+            subtype: 'Button',
+            payload: 2,
+            device: device
+        }
+    },
+
+    action_triple: {
+        config_topic: 'homeassistant/device_automation/lumi' + common.mac + '_button/action_3/config',
+        homeassistant: {
+            automation_type: 'trigger',
+            topic: common.config.mqtt_topic + '/button/action',
+            type: 'button_triple_press',
+            subtype: 'Button',
+            payload: 3,
+            device: device
+        }
     }
 }
 
@@ -143,7 +186,11 @@ function getState() {
     if (common.config.homeassistant) {
         mqtt.publish_homeassistant(lamp);
         mqtt.publish_homeassistant(illuminance);
-        mqtt.publish_homeassistant(button);
+
+        mqtt.publish_homeassistant(button.action);
+        mqtt.publish_homeassistant(button.action_single);
+        mqtt.publish_homeassistant(button.action_double);
+        mqtt.publish_homeassistant(button.action_triple);
     }
 }
 
@@ -174,11 +221,12 @@ function getLamp() {
     }
 }
 
-// Сохраняем текущее состояние лампы
+// Сохраняем текущее состояние лампы перед включением Alarm
 function saveLamp() {
     lamp.save_value = JSON.stringify(lamp.value);
 }
 
+// Восстанавливаем состояние лампы до Alarm
 function restoreLamp() {
     setLamp(lamp.save_value);
 }
@@ -477,6 +525,13 @@ function downloadFile(url, dest) {
     });
 }
 
+function publishButton() {
+    common.myLog(button.value + " click detected");
+    mqtt.publish_value(button);
+    button.value= 0;
+    mqtt.publish_value(button);
+}
+
 // Получаем данные о кнопке
 fd = fs.createReadStream(button.device, button.options);
 fd.on('data', function (buf) {
@@ -489,9 +544,18 @@ fd.on('data', function (buf) {
             code: buf.readUInt16LE(i + 10),
             value: buf.readUInt32LE(i + 12)
         };
-        if (event.type == 1 && event.code == 256) {
-            button.value = event.value;
-            mqtt.publish_json(button);
+
+        button.t1 = new Date();
+        if (event.value == 1) {
+            clearTimeout(button.timer);
+            if (button.t1 - button.t0 < common.config.button_click_duration) {
+                button.value++;
+            } else {
+                button.value = 1;
+            }
+
+            button.t0 = button.t1;
+            button.timer = setTimeout (publishButton, common.config.button_click_duration);
         }
     }
 });

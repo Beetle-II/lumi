@@ -8,7 +8,7 @@ MQTT агент для шлюза Xiaomi DGNWG05LM с прошивкой [OpenWR
 Встроенный датчик освещения | lumi/illumination
 Подсветка | lumi/lamp | lumi/lamp/set
 Уведомление подсветкой |  | lumi/alarm/set
-Кнопка | lumi/button
+Кнопка | lumi/button/action
 Воспроизводимый url, volume | lumi/audio/play | lumi/audio/play/set
 Громкость | lumi/audio/volume | lumi/audio/volume/set
 Голосовое уведомление |  | lumi/say/set
@@ -57,15 +57,13 @@ cp config_example.json config.json
 {
   "sensor_debounce_period": 300,
   "sensor_treshhold": 50,
-  
+  "button_click_duration": 300,
+          
   "homeassistant": true,
   "use_ble": false,
-
   "tts_cache": true,
-  
   "sound_channel": "Master",
   "sound_volume": 50,
-  
   "mqtt_url": "mqtt://адрес вашего сервера",
   "mqtt_topic": "lumi",
   "use_mac_in_mqtt_topic": false,
@@ -99,6 +97,7 @@ cp config_example.json config.json
 ||
 "sensor_debounce_period": 300 | период отправки данных о состоянии устройств (в секундах)
 "sensor_treshhold": 50 | порог изменения состояния датчика, для моментальной отправки данных
+"button_click_duration": 300 | время в мс между кликами кнопкой.
 ||
 "use_mac_in_mqtt_topic": true | добавить MAC шлюза в MQTT топики
 
