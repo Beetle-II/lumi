@@ -132,7 +132,7 @@ let timer_alarm;
 
 // Отправляем данные о статусе шлюза
 function getState() {
-    mqtt.publish(state);
+    mqtt.publish_value(state, true);
     getIlluminance();
     getLamp();
     getPlay();
@@ -150,7 +150,7 @@ function getIlluminance(treshhold = 0) {
     let ill_prev = illuminance.value;
     illuminance.value = parseInt(fs.readFileSync('/sys/bus/iio/devices/iio:device0/in_voltage5_raw'));
     if (Math.abs(illuminance.value - ill_prev) > treshhold) {
-        mqtt.publish(illuminance);
+        mqtt.publish_json(illuminance);
     }
 }
 
@@ -164,11 +164,11 @@ function getLamp() {
 
     if (lamp.real_color.r + lamp.real_color.g + lamp.real_color.b > 0) {
         lamp.value.state = 'ON';
-        mqtt.publish(lamp);
+        mqtt.publish_json(lamp);
     } else {
         lamp.value.state = 'OFF';
         // Публикуем только состояние, чтобы не потерять последний заданный цвет
-        mqtt.publish({state_topic: lamp.state_topic, value: {state: lamp.value.state}});
+        mqtt.publish_json({state_topic: lamp.state_topic, value: {state: lamp.value.state}});
     }
 }
 
@@ -218,7 +218,7 @@ function getPlay() {
     if (audio.play.value.name.length < 5) {
         audio.play.value.name = audio.play.value.url;
     }
-    mqtt.publish(audio.play);
+    mqtt.publish_json(audio.play);
 }
 
 // Включаем/выключаем проигрыватель
@@ -263,7 +263,7 @@ function setPlay(message) {
 // Получаем состояние о громкости
 function getVolume() {
     audio.volume.value = cp.execSync("amixer get " + common.config.sound_channel + " | awk '$0~/%/{print $4}' | tr -d '[]%'").toString().split(os.EOL)[0];
-    mqtt.publish(audio.volume);
+    mqtt.publish_json(audio.volume);
 
     return audio.volume.value;
 }
@@ -442,7 +442,7 @@ fd.on('data', function (buf) {
         };
         if (event.type == 1 && event.code == 256) {
             button.value = event.value;
-            mqtt.publish(button);
+            mqtt.publish_json(button);
         }
     }
 });

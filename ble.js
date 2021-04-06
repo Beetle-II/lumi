@@ -83,7 +83,7 @@ function getDevices() {
                 mqtt.publish_homeassistant(dev);
             }
         });
-        mqtt.publish(devices);
+        mqtt.publish_json(devices);
     });
 }
 

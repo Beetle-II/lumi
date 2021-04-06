@@ -4,6 +4,7 @@ if (common.config.use_mac_in_mqtt_topic) {
     common.config.mqtt_topic = common.config.mqtt_topic + common.mac;
 }
 common.config.mqtt_options.clientId = 'mqtt_js_' + Math.random().toString(16).substr(2, 8);
+common.config.mqtt_options.will.topic = common.config.mqtt_topic + '/state';
 
 const gateway = require('./gateway');
 const mqtt = require('./mqtt_client');
