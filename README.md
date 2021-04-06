@@ -135,7 +135,9 @@ git pull
 
 Топик | Значение | Описание
 ---|---|---
-lumi/light/set | {"color":{"r":50,"g":50,"b":50},"state":"ON"} | Включить подсветку
+lumi/light/set | {"state":"ON"} | Включить подсветку
+lumi/light/set | {"state":"ON", "color":{"r":50,"g":50,"b":50}} | Включить подсветку с указанным цветом
+lumi/light/set | {"state":"ON", "timeout": 30} | Включить подсветку и выключить через указанное время (сек)
 lumi/light/set | {"state":"OFF"} | Выключить подсветку
 ||
 lumi/audio/play/set | "http://ep128.hostingradio.ru:8030/ep128" | Включить Радио Европа+

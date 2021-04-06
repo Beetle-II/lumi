@@ -205,6 +205,12 @@ function setLamp(message) {
             fs.writeFileSync(lamp.path.r, lamp.value.color.r);
             fs.writeFileSync(lamp.path.g, lamp.value.color.g);
             fs.writeFileSync(lamp.path.b, lamp.value.color.b);
+
+            if (msg.timeout) {
+                setTimeout(() => {
+                    setLamp('{"state":"OFF"}');
+                }, msg.timeout * 1000);
+            }
         }
     } catch (e) {
         common.myLog(e, common.colors.red);
