@@ -46,9 +46,13 @@ let lamp = {
             g: 30,
             b: 30
         },
-        brightness: 0,
+        brightness: 30,
         state: 'OFF'
     },
+
+    save_value: '',
+
+    alarm_timer: 0,
 
     real_color: {
         r: 0,
@@ -126,8 +130,6 @@ let audio = {
     }
 }
 
-let timer_alarm;
-
 ///////////////
 
 // Отправляем данные о статусе шлюза
@@ -172,9 +174,19 @@ function getLamp() {
     }
 }
 
+// Сохраняем текущее состояние лампы
+function saveLamp() {
+    lamp.save_value = JSON.stringify(lamp.value);
+}
+
+function restoreLamp() {
+    setLamp(lamp.save_value);
+}
+
 // Меняем состояние лампы в зависимости от полученных данных
 function setLamp(message) {
     try {
+        common.myLog("setLamp. lamp=" + message);
         let state;
         let msg = JSON.parse(message);
         if (msg.state) {
@@ -276,7 +288,7 @@ function getVolume() {
 
 // Устанавливаем громкость
 function setVolume(volume) {
-    cp.execSync('amixer sset "' + common.config.sound_channel +  '" ' + volume + '%');
+    cp.execSync('amixer sset "' + common.config.sound_channel + '" ' + volume + '%');
     getVolume();
 }
 
@@ -330,7 +342,7 @@ function setSay(message) {
     }
 }
 
-// Устанавливаем громкость
+// Включаем световое уведомление
 function setAlarm(message) {
     try {
         let msg = JSON.parse(message);
@@ -341,30 +353,61 @@ function setAlarm(message) {
             state = msg.toUpperCase();
         }
 
-        if (state === 'OFF') {
-            if (typeof timer_alarm !== 'undefined') {
-                clearTimeout(timer_alarm);
-                setLamp('{"state":"OFF"}');
-            }
+        if (lamp.alarm_timer != 0) {
+            stopAlarm();
         }
-        if (state === 'ON') {
+
+        if (state === 'OFF') {
+            restoreLamp();
+        } else if (state === 'ON') {
+            saveLamp();
+
+            let type = 0;
+            if (msg.type) {
+                type = msg.type;
+            }
+
+            let time = 2000;
+            if (msg.time) {
+                time = msg.time * 1000;
+            }
+
             if (msg.color) {
                 setLamp(message);
             }
 
-            // Запускаем таймер мигания лампой
-            timer_alarm = setTimeout(function tick() {
+            let count = 0;
+            if (msg.count) {
+                count = msg.count;
+            }
+
+            let loop = 0;
+            lamp.alarm_timer = setTimeout(function tick() {
+                common.myLog("Alarm. loop=" + loop);
                 if (lamp.value.state === 'ON') {
                     setLamp('{"state":"OFF"}');
                 } else {
                     setLamp('{"state":"ON"}');
                 }
-                timer_alarm = setTimeout(tick, 2000);
-            }, 2000);
+                if (loop <= count) {
+                    lamp.alarm_timer = setTimeout(tick, time);
+                    if (count > 0) loop++;
+                } else {
+                    stopAlarm();
+                    restoreLamp();
+                }
+            }, time);
         }
     } catch (e) {
         common.myLog(e, common.colors.red);
     }
+}
+
+// Отключаем световое уведомление
+function stopAlarm() {
+    common.myLog("Останавливаем Alarm.");
+    clearTimeout(lamp.alarm_timer);
+    lamp.alarm_timer = 0;
 }
 
 function sayText(text, lang) {

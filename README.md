@@ -147,8 +147,12 @@ lumi/audio/play/set | "STOP" | Выключить воспроизведение
 ||
 lumi/audio/volume/set | 30 | Именить громкость на 30
 ||
-lumi/say/set | {"text": "Привет", "volume": 80} | Произнести 'Привет' с громкостью 80
 lumi/say/set | "Привет" | Произнести 'Привет'
+lumi/say/set | {"text": "Привет", "volume": 80} | Произнести 'Привет' с громкостью 80
+lumi/say/set | {"text": "Hello", "lang": "en"} | Произнести 'Hello'
 ||
-lumi/alarm/set | {"color":{"r":50,"g":50,"b":50},"state":"ON"} | Включить мигание лампой
+lumi/alarm/set | {"state":"ON"} | Включить мигание лампой
+lumi/alarm/set | {"state":"ON", "color":{"r":50,"g":50,"b":50}} | Включить мигание лампой указанным цветом
+lumi/alarm/set | {"state":"ON", "time": 1} | Включить мигание лампой с частотой 1 сек
+lumi/alarm/set | {"state":"ON", "count": 5} | Включить мигание лампой 5 раз, после отключить
 lumi/alarm/set | {"state":"OFF"} | Выключить мигание лампой
