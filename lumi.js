@@ -9,7 +9,7 @@ const gateway = require('./gateway');
 const mqtt = require('./mqtt_client');
 const ble = require('./ble');
 
-gateway.setVolume(50);
+gateway.setVolume(config.sound_volume);
 
 // Запускаем таймер 1
 setInterval(() => {

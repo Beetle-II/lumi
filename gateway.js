@@ -262,7 +262,7 @@ function setPlay(message) {
 
 // Получаем состояние о громкости
 function getVolume() {
-    audio.volume.value = cp.execSync("amixer get Master | awk '$0~/%/{print $4}' | tr -d '[]%'").toString().split(os.EOL)[0];
+    audio.volume.value = cp.execSync("amixer get " + config.sound_channel + " | awk '$0~/%/{print $4}' | tr -d '[]%'").toString().split(os.EOL)[0];
     mqtt.publish(audio.volume);
 
     return audio.volume.value;
@@ -270,7 +270,7 @@ function getVolume() {
 
 // Устанавливаем громкость
 function setVolume(volume) {
-    cp.execSync('amixer sset Master ' + volume + '%');
+    cp.execSync('amixer sset " + config.sound_channel + " ' + volume + '%');
     getVolume();
 }
 
@@ -278,16 +278,6 @@ function setVolume(volume) {
 function setSay(message) {
     try {
         let msg = JSON.parse(message);
-
-/*
-        try {
-            if (msg.toLowerCase() === 'stop') {
-                cp.execSync('killall mpg123');
-                return;
-            }
-        } finally {
-        }
-*/
 
         if (msg.volume) {
             setVolume(msg.volume);
@@ -388,7 +378,7 @@ function sayText(text, lang) {
                     //console.log('Download success');
                     cp.execSync('mpg123 ' + file);
 
-                    if (common.config.delete_file) {
+                    if (!common.config.tts_cache) {
                         fs.unlinkSync(file);
                     }
                 })

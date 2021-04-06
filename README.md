@@ -61,7 +61,10 @@ cp config_example.json config.json
   "homeassistant": true,
   "use_ble": false,
 
-  "delete_file": false,
+  "tts_cache": true,
+  
+  "sound_channel": "Master",
+  "sound_volume": 50,
   
   "mqtt_url": "mqtt://адрес вашего сервера",
   "mqtt_topic": "lumi",
@@ -83,7 +86,10 @@ cp config_example.json config.json
 "homeassistant": true | уведомлять MQTT брокер об устройствах шлюза. Помогает добавлять устройства в HomeAssistant
 "use_ble": false | включить сканирование и отправку данных c BLE устройств
 ||
-"delete_file": false | кешировать файлы TTS после воспроизведения
+"tts_cache": true | кешировать файлы TTS после воспроизведения
+||
+"sound_channel": "Master" | канал для вывода звука
+"sound_volume": 50 | громкость, задаваемая по умолчанию
 ||
 "sensor_debounce_period": 300 | период отправки данных о состоянии устройств (в секундах)
 "sensor_treshhold": 50 | порог изменения состояния датчика, для моментальной отправки данных
