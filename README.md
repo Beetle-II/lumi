@@ -76,7 +76,13 @@ cp config_example.json config.json
     "keepalive": 60,
     "reconnectPeriod": 1000,
     "clean": true,
-    "encoding": "utf8"
+    "encoding": "utf8",
+    "will": {
+      "topic": "lumi/state",
+      "payload": "offline",
+      "qos": 1,
+      "retain": true
+    }
   }
 }
 ```
