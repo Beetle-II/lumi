@@ -262,7 +262,7 @@ function setPlay(message) {
 
 // Получаем состояние о громкости
 function getVolume() {
-    audio.volume.value = cp.execSync("amixer get " + config.sound_channel + " | awk '$0~/%/{print $4}' | tr -d '[]%'").toString().split(os.EOL)[0];
+    audio.volume.value = cp.execSync("amixer get " + common.config.sound_channel + " | awk '$0~/%/{print $4}' | tr -d '[]%'").toString().split(os.EOL)[0];
     mqtt.publish(audio.volume);
 
     return audio.volume.value;
@@ -270,7 +270,7 @@ function getVolume() {
 
 // Устанавливаем громкость
 function setVolume(volume) {
-    cp.execSync('amixer sset " + config.sound_channel + " ' + volume + '%');
+    cp.execSync('amixer sset "' + common.config.sound_channel +  '" ' + volume + '%');
     getVolume();
 }
 
