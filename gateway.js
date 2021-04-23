@@ -182,6 +182,7 @@ function getState() {
     getLamp();
     getPlay();
     getVolume();
+    publishButton();
 
     if (common.config.homeassistant) {
         mqtt.publish_homeassistant(lamp);
