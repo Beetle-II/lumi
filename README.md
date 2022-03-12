@@ -21,10 +21,10 @@ MQTT агент для шлюза Xiaomi DGNWG05LM с прошивкой [OpenWR
 ---
 Для скачивания и работы необходимы пакеты node.js, git, mpc
 
-Устанавливаем необходимые пакеты:
+Устанавливаем их:
 
 ```
-opkg update && opkg install node git-http mpc mpd-full
+opkg update && opkg install node git-http mpg123 mpc mpd-full
 ```
 
 Скачиваем lumi:
