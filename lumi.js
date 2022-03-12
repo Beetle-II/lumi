@@ -8,7 +8,6 @@ common.config.mqtt_options.will.topic = common.config.mqtt_topic + '/state';
 
 const gateway = require('./gateway');
 const mqtt = require('./mqtt_client');
-const ble = require('./ble');
 
 if (common.config.sound_volume != 0) {
     gateway.setVolume(common.config.sound_volume);
@@ -25,9 +24,6 @@ let timer_ID = setTimeout( function tick() {
 
     // Отправляем состояния устройств
     gateway.getState();
-    if (common.config.use_ble) {
-        ble.getDevices();
-    }
 
     timer_ID = setTimeout(tick, common.config.sensor_debounce_period * 1000);
 }, common.config.sensor_debounce_period * 1000);

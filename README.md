@@ -1,6 +1,6 @@
 # Lumi MQTT
 
-MQTT агент для шлюза Xiaomi DGNWG05LM с прошивкой [OpenWRT 19.07.7](https://github.com/openlumi/openwrt/tags).  
+MQTT агент для шлюза Xiaomi DGNWG05LM с прошивкой [OpenWRT 21.02.2](https://github.com/openlumi/openwrt/tags).  
 Позволяет взаимодействовать со шлюзом через MQTT.
 
 Взаимодействие | MQTT topic, получение | MQTT topic, управление
@@ -12,9 +12,6 @@ MQTT агент для шлюза Xiaomi DGNWG05LM с прошивкой [OpenWR
 Воспроизводимый url, volume | lumi/audio/play | lumi/audio/play/set
 Громкость | lumi/audio/volume | lumi/audio/volume/set
 Голосовое уведомление |  | lumi/say/set
-BLE устройства | lumi/{MAC} |
-
-{MAC} - адрес bluetooth устройства.
 
 [Примеры команд](#примеры-команд)
 
@@ -22,26 +19,15 @@ BLE устройства | lumi/{MAC} |
 Вопросы и обсуждение - https://t.me/lumi_mqtt
 
 ---
-
-### Замеченные проблемы:
-
-На некоторых шлюзах при включении сканирования BLE устройств возникают проблемы с работой WiFi.  
-Связь со шлюзом становиться не стабильной.
-
----
 Для скачивания и работы необходимы пакеты node.js, git, mpc
 
-Добавляем репозиторий со свежими версиями Node и устанавливаем необходимые пакеты:
+Устанавливаем необходимые пакеты:
 
 ```
-wget https://openlumi.github.io/openwrt-packages/public.key -O /tmp/public.key
-opkg-key add /tmp/public.key
-echo 'src/gz openlumi https://openlumi.github.io/openwrt-packages/packages/19.07/arm_cortex-a9_neon' >> /etc/opkg/customfeeds.conf
-
 opkg update && opkg install node git-http mpc mpd-full
 ```
 
-Скачиваем:
+Скачиваем lumi:
 
 ```
 mkdir /opt
@@ -60,7 +46,6 @@ cp config_example.json config.json
   "button_click_duration": 300,
           
   "homeassistant": true,
-  "use_ble": false,
   "tts_cache": true,
   "sound_channel": "Master",
   "sound_volume": 50,
@@ -88,7 +73,6 @@ cp config_example.json config.json
 Параметр | Описание
 --- | ---
 "homeassistant": true | уведомлять MQTT брокер об устройствах шлюза. Помогает добавлять устройства в HomeAssistant
-"use_ble": false | включить сканирование и отправку данных c BLE устройств
 ||
 "tts_cache": true | кешировать файлы TTS после воспроизведения
 ||

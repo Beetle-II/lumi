@@ -4,7 +4,6 @@
 	"button_click_duration": 300,
 
 	"homeassistant": true,
-	"use_ble": false,
 
 	"tts_cache": true,
 
