@@ -245,9 +245,9 @@ function setLamp(message) {
         }
 
         if (state === 'OFF') {
-            fs.writeFileSync(lamp.path.r, 0);
-            fs.writeFileSync(lamp.path.g, 0);
-            fs.writeFileSync(lamp.path.b, 0);
+            fs.writeFileSync(lamp.path.r, '0');
+            fs.writeFileSync(lamp.path.g, '0');
+            fs.writeFileSync(lamp.path.b, '0');
         }
         if (state === 'ON') {
             if (msg.color) {
@@ -263,9 +263,9 @@ function setLamp(message) {
                 lamp.value.color.g = Math.round(k * lamp.value.color.g);
                 lamp.value.color.b = Math.round(k * lamp.value.color.b);
             }
-            fs.writeFileSync(lamp.path.r, lamp.value.color.r);
-            fs.writeFileSync(lamp.path.g, lamp.value.color.g);
-            fs.writeFileSync(lamp.path.b, lamp.value.color.b);
+            fs.writeFileSync(lamp.path.r, lamp.value.color.r.toString());
+            fs.writeFileSync(lamp.path.g, lamp.value.color.g.toString());
+            fs.writeFileSync(lamp.path.b, lamp.value.color.b.toString());
 
             if (msg.timeout) {
                 setTimeout(() => {
